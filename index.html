@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웃는 얼굴 채점기</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>웃는 얼굴 채점기</h1>
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+        </div>
+        <div class="score-container">
+            <div id="score">0</div>
+            <div id="message">카메라를 켜는 중...</div>
+        </div>
+    </div>
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <!-- PoseNet -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet@2.2.1/dist/posenet.min.js"></script>
+    <script>
+        // 모델 로드 상태 확인
+        window.addEventListener('load', () => {
+            console.log('TensorFlow.js 로드 상태:', !!window.tf);
+            console.log('PoseNet 로드 상태:', !!window.posenet);
+        });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html> 
