@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>스마일 측정기 - Smile Detector</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <title>웃는 얼굴 채점기</title>
     <style>
         * {
             margin: 0;
@@ -13,252 +12,76 @@
         }
         
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: #333;
-            color: #fff;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            padding: 20px;
+            background-color: #f5f5f5;
         }
         
-        h1 {
-            margin-bottom: 20px;
-            font-size: 28px;
-            text-align: center;
-            color: #FFD700;
-        }
-        
-        #main-container {
-            width: 100%;
-            max-width: 800px;
-            background-color: #444;
-            border-radius: 10px;
-            overflow: hidden;
-            padding: 20px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        #video-container {
+        #container {
             position: relative;
-            width: 100%;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: #222;
+            width: 90%;
+            max-width: 640px;
         }
         
         #video {
-            display: block;
             width: 100%;
             height: auto;
-            transform: scaleX(-1); /* 거울 모드 */
+            aspect-ratio: 4/3;
+            border-radius: 10px;
+            background-color: #000;
+            display: block;
+            transform: scaleX(-1); /* 거울 효과 */
         }
         
-        #canvas {
+        #score-box {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        #score-value {
+            font-size: 36px;
+            color: #3498db;
+            margin-right: 10px;
+        }
+        
+        #message {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #555;
+        }
+        
+        #face-points {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            transform: scaleX(-1); /* 거울 모드 */
-        }
-        
-        #score-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            background-color: #333;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        #score-label {
-            font-size: 20px;
-            margin-right: 10px;
-        }
-        
-        #score {
-            font-size: 36px;
-            font-weight: bold;
-            color: #f39c12;
-            margin-right: 20px;
-        }
-        
-        #emoji {
-            font-size: 48px;
-            margin-left: 10px;
-        }
-        
-        #controls {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        
-        #startButton {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        #startButton:hover {
-            background-color: #2980b9;
-        }
-        
-        #startButton:disabled {
-            background-color: #7f8c8d;
-            cursor: not-allowed;
-        }
-        
-        #startButton.hidden {
-            display: none;
-        }
-        
-        #resetButton {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin-left: 10px;
-        }
-        
-        #resetButton:hover {
-            background-color: #c0392b;
-        }
-        
-        #resetButton.hidden {
-            display: none;
-        }
-        
-        #status {
-            margin-top: 10px;
-            font-size: 16px;
-            color: #bbb;
-        }
-        
-        #status.hidden {
-            display: none;
-        }
-        
-        #calibration {
-            display: none;
-            padding: 10px 15px;
-            background-color: #e74c3c;
-            color: white;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        #calibration.active {
-            display: block;
-        }
-        
-        #message {
-            text-align: center;
-            font-size: 18px;
-            padding: 15px;
-            background-color: #2c3e50;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        #instructions {
-            background-color: #333;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        #instructions h3 {
-            color: #3498db;
-            margin-bottom: 10px;
-        }
-        
-        #instructions ol {
-            padding-left: 20px;
-        }
-        
-        #instructions li {
-            margin-bottom: 8px;
-        }
-        
-        .highlight {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        
-        footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #999;
-            text-align: center;
+            transform: scaleX(-1); /* 비디오와 일치하도록 좌우 반전 */
         }
     </style>
 </head>
 <body>
-    <h1>스마일 측정기 - Smile Detector</h1>
-    
-    <div id="main-container">
-        <div id="video-container">
-            <video id="video" autoplay playsinline></video>
-            <canvas id="canvas"></canvas>
-        </div>
-        
-        <div id="calibration">캘리브레이션 시작...</div>
-        
-        <div id="score-container">
-            <span id="score-label">점수:</span>
-            <span id="score">0</span>
-            <span id="emoji">😐</span>
-        </div>
-        
-        <div id="message">시작 버튼을 눌러 측정을 시작하세요.</div>
-        
-        <div id="controls">
-            <button id="startButton" disabled>카메라 시작하기</button>
-            <button id="resetButton" class="hidden">다시 하기</button>
-            <div id="status">모델 로딩 중...</div>
-        </div>
-        
-        <div id="instructions">
-            <h3>사용 방법</h3>
-            <ol>
-                <li>'카메라 시작하기' 버튼을 눌러 웹캠을 활성화합니다.</li>
-                <li>캘리브레이션 동안 <span class="highlight">정면을 바라보고 자연스러운 표정</span>을 유지해주세요.</li>
-                <li>캘리브레이션이 완료되면 다양한 표정을 지어보세요!</li>
-                <li>웃으면 점수가 높아지고, 찡그리면 점수가 낮아집니다.</li>
-                <li>가장 환하게 웃으면 100점, 표정이 없으면 50점, 가장 찡그리면 0점입니다.</li>
-            </ol>
+    <div id="container">
+        <video id="video" width="640" height="480" autoplay muted playsinline></video>
+        <canvas id="face-points"></canvas>
+        <div id="score-box">
+            <span id="score-value">80</span>점
+            <div id="message">카메라를 켜는 중...</div>
         </div>
     </div>
-    
-    <footer>
-        스마일 측정기 &copy; 2023 - PoseNet과 TensorFlow.js를 활용한 표정 분석 앱
-    </footer>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
-    <script src="script.js"></script>
+
+    <!-- Face-API.js - 가벼운 얼굴 인식 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script src="app.js"></script>
 </body>
 </html> 
