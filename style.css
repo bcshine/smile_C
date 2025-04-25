@@ -1,57 +1,234 @@
-* {
+/* 기본 스타일 */
+body {
+    font-family: 'Noto Sans KR', sans-serif;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f2f5;
+    background-color: #f0f5ff;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
 }
 
 .container {
-    max-width: 100%;
+    max-width: 800px;
+    width: 100%;
     padding: 20px;
-    text-align: center;
+    box-sizing: border-box;
 }
 
 h1 {
-    color: #333;
+    color: #2c3e50;
+    text-align: center;
+    margin-top: 30px;
     margin-bottom: 20px;
+    font-size: 2rem;
 }
 
-.camera-container {
+/* 비디오 및 캔버스 */
+.video-container {
     position: relative;
     width: 100%;
-    max-width: 500px;
+    max-width: 640px;
     margin: 0 auto;
-    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    background-color: #000;
 }
 
-video {
+#video, #canvas {
     width: 100%;
-    height: auto;
     display: block;
 }
 
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* 점수 및 피드백 */
 .score-container {
-    margin-top: 20px;
+    margin: 20px auto;
+    text-align: center;
     padding: 20px;
     background-color: white;
     border-radius: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
 }
 
-#score {
-    font-size: 48px;
-    font-weight: bold;
-    color: #4CAF50;
+.score-title {
+    font-size: 1.2rem;
+    color: #7f8c8d;
     margin-bottom: 10px;
 }
 
+.score-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+#score {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #f39c12;
+    margin: 0 15px;
+}
+
+#emoji {
+    font-size: 3.5rem;
+    margin: 0 15px;
+}
+
 #message {
-    font-size: 18px;
-    color: #666;
+    font-size: 1.1rem;
+    color: #34495e;
+    font-weight: 500;
+}
+
+/* 시작 버튼 및 상태 */
+.controls {
+    margin: 20px auto;
+    text-align: center;
+}
+
+#startButton {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+#startButton:hover {
+    background-color: #2980b9;
+}
+
+#startButton:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+#status {
+    margin-top: 10px;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* 안내 및 설명 */
+.instructions {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px auto;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+}
+
+.instructions h2 {
+    color: #2980b9;
+    margin-top: 0;
+    font-size: 1.3rem;
+}
+
+.instructions ol {
+    padding-left: 20px;
+}
+
+.instructions li {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.instructions li strong {
+    color: #e74c3c;
+}
+
+/* 캘리브레이션 알림 */
+#calibration {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(44, 62, 80, 0.9);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    text-align: center;
+    max-width: 80%;
+}
+
+#calibration.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.6rem;
+    }
+    
+    .instructions h2 {
+        font-size: 1.2rem;
+    }
+    
+    #score {
+        font-size: 2.5rem;
+    }
+    
+    #emoji {
+        font-size: 3rem;
+    }
+    
+    .video-container {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 1.4rem;
+        margin-top: 20px;
+    }
+    
+    #score {
+        font-size: 2.2rem;
+    }
+    
+    #emoji {
+        font-size: 2.5rem;
+    }
+    
+    #message {
+        font-size: 1rem;
+    }
+    
+    .instructions li {
+        font-size: 0.9rem;
+    }
+    
+    #calibration {
+        font-size: 1rem;
+        padding: 12px 20px;
+    }
 } 
