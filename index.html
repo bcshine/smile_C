@@ -125,6 +125,28 @@
             display: none;
         }
         
+        #resetButton {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin-left: 10px;
+        }
+        
+        #resetButton:hover {
+            background-color: #c0392b;
+        }
+        
+        #resetButton.hidden {
+            display: none;
+        }
+        
         #status {
             margin-top: 10px;
             font-size: 16px;
@@ -215,6 +237,7 @@
         
         <div id="controls">
             <button id="startButton" disabled>카메라 시작하기</button>
+            <button id="resetButton" class="hidden">다시 하기</button>
             <div id="status">모델 로딩 중...</div>
         </div>
         

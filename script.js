@@ -12,6 +12,7 @@ const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
 const startButton = document.getElementById('startButton');
+const resetButton = document.getElementById('resetButton');
 const statusElement = document.getElementById('status');
 const scoreElement = document.getElementById('score');
 const emojiElement = document.getElementById('emoji');
@@ -26,7 +27,7 @@ let expressionState = {
     baselineEyeDistance: 0,
     baselineMouthHeight: 0,
     baselineMouthWidth: 0,
-    currentScore: 50  // Start at neutral
+    currentScore: 88  // Start at neutral
 };
 
 // Initialize the application
@@ -53,6 +54,7 @@ startButton.addEventListener('click', async () => {
         video = await setupCamera();
         video.play();
         startButton.classList.add('hidden');
+        resetButton.classList.remove('hidden');
         statusElement.classList.add('hidden');
         videoElement.style.display = 'block';
         
@@ -71,6 +73,9 @@ startButton.addEventListener('click', async () => {
         statusElement.classList.remove('hidden');
     }
 });
+
+// 다시 하기 버튼 이벤트 처리
+resetButton.addEventListener('click', resetApp);
 
 // Set up the camera
 async function setupCamera() {
@@ -150,8 +155,8 @@ function startCalibration() {
             calibrationElement.classList.remove('active');
             messageElement.textContent = "캘리브레이션 완료! 이제 다양한 표정을 지어보세요.";
             
-            // Set initial score to neutral
-            updateScore(50);
+            // 초기 점수를 80점(보통)으로 설정
+            updateScore(80);
         }
     }, 50);
 }
@@ -159,7 +164,7 @@ function startCalibration() {
 // Update score and emoji display
 function updateScore(newScore) {
     // Ensure score is between 0 and 100
-    newScore = Math.max(0, Math.min(100, newScore));
+    newScore = Math.max(66, Math.min(100, newScore));
     expressionState.currentScore = newScore;
     
     // Update score display
@@ -168,16 +173,16 @@ function updateScore(newScore) {
     // Update emoji based on score
     let emoji, message;
     
-    if (newScore >= 80) {
+    if (newScore >= 99) {
         emoji = emojis.veryHappy;
         message = "환한 미소가 아름다워요! 최고의 웃음이네요!";
-    } else if (newScore >= 60) {
+    } else if (newScore >= 95) {
         emoji = emojis.happy;
         message = "기분 좋은 미소를 짓고 계시네요!";
-    } else if (newScore >= 40) {
+    } else if (newScore >= 88) {
         emoji = emojis.neutral;
         message = "자연스러운 표정입니다. 미소를 지어보세요!";
-    } else if (newScore >= 20) {
+    } else if (newScore >= 77) {
         emoji = emojis.sad;
         message = "조금 찡그린 표정이에요. 기분이 안 좋으신가요?";
     } else {
@@ -309,6 +314,24 @@ function analyzeExpression(pose) {
             Math.pow(leftMouth.position.y - rightMouth.position.y, 2)
         );
         
+        // 값이 유효한지 확인
+        if (currentEyeDistance <= 0 || 
+            expressionState.baselineEyeDistance <= 0 || 
+            currentMouthHeight <= 0 || 
+            expressionState.baselineMouthHeight <= 0 ||
+            currentMouthWidth <= 0 ||
+            expressionState.baselineMouthWidth <= 0) {
+            console.log("유효하지 않은 측정값 감지됨:", {
+                currentEyeDistance,
+                baselineEyeDistance: expressionState.baselineEyeDistance,
+                currentMouthHeight,
+                baselineMouthHeight: expressionState.baselineMouthHeight,
+                currentMouthWidth,
+                baselineMouthWidth: expressionState.baselineMouthWidth
+            });
+            return; // 유효하지 않은 값이 있으면 계산하지 않음
+        }
+        
         // Normalize by eye distance to account for different face sizes and distances
         const normalizedBaseMouthHeight = expressionState.baselineMouthHeight / expressionState.baselineEyeDistance;
         const normalizedBaseMouthWidth = expressionState.baselineMouthWidth / expressionState.baselineEyeDistance;
@@ -317,32 +340,79 @@ function analyzeExpression(pose) {
         const normalizedCurrentMouthWidth = currentMouthWidth / currentEyeDistance;
         
         // 개선된 미소 감지 알고리즘
-        // 웃을 때는 입 너비가 증가하고 높이는 감소하는 경향이 있음
         const widthFactor = normalizedCurrentMouthWidth / normalizedBaseMouthWidth;
-        // 높이 요소 계산 방법 개선 - 찡그림과 웃음을 구별하기 위해 수정
-        const heightFactor = normalizedBaseMouthHeight / normalizedCurrentMouthHeight;
+        const heightFactor = normalizedCurrentMouthHeight / normalizedBaseMouthHeight;
         
-        // 미소 계수 계산 방법 개선
-        // 웃을 때는 widthFactor > 1.0, heightFactor > 1.0 임
-        const smileFactor = Math.pow(widthFactor, 0.8) * Math.pow(heightFactor, 0.5);
+        // console로 값 확인
+        console.log("표정 분석 값:", {
+            widthFactor,
+            heightFactor,
+            normalizedBaseMouthWidth,
+            normalizedCurrentMouthWidth,
+            normalizedBaseMouthHeight,
+            normalizedCurrentMouthHeight
+        });
         
-        // 점수 변환 방식 개선
-        let newScore;
-        if (smileFactor > 1.0) {
-            // 웃는 표정: 1.0-1.5 범위를 50-100으로 매핑
-            // 더 민감하게 감지하도록 계수 조정
-            newScore = 50 + (smileFactor - 1.0) * 120;
+        // 점수 계산 - 새로운 점수 체계 적용 (기본값 88점, 10% 증가)
+        let newScore = 88; // 기본 점수 - 평균적인 표정 (80 + 10% = 88)
+        
+        if (!isNaN(widthFactor) && !isNaN(heightFactor)) {
+            // 웃는 정도 계산 (미소 지수)
+            let smileIndex = 0;
+            
+            // 입 너비 변화로 미소 감지 (가장 중요한 요소)
+            if (widthFactor > 1.05) {
+                // 입이 크게 벌어지면 활짝 웃는 것으로 간주
+                smileIndex += (widthFactor - 1.0) * 22; // 20 + 10%
+            } else if (widthFactor < 0.95) {
+                // 입이 좁아지면 찡그린 것으로 간주
+                smileIndex -= (1.0 - widthFactor) * 16.5; // 15 + 10%
+            }
+            
+            // 입 높이 변화로 보조 판단
+            // 웃을 때는 일반적으로 입 높이가 낮아짐
+            if (heightFactor < 0.95 && widthFactor > 1.0) {
+                // 입 너비는 넓어지고 높이가 낮아지면 웃는 것
+                smileIndex += (1.0 - heightFactor) * 11; // 10 + 10%
+            } else if (heightFactor > 1.1 && widthFactor < 1.0) {
+                // 입 너비는 좁아지고 높이가 높아지면 찡그린 것
+                smileIndex -= (heightFactor - 1.0) * 5.5; // 5 + 10%
+            }
+            
+            // 최종 점수 계산
+            if (smileIndex > 0) {
+                // 웃는 표정 (88점 이상)
+                // 활짝 웃는 경우 (smileIndex > 1.5) 99점 이상
+                // 조금 웃는 경우 (smileIndex > 0.5) 99점까지
+                if (smileIndex > 1.5) {
+                    newScore = Math.min(100, 99 + Math.min(1, smileIndex - 1.5));
+                } else if (smileIndex > 0.5) {
+                    newScore = 99 * Math.min(1, (smileIndex - 0.5) * 0.2);
+                } else {
+                    newScore = 88 + smileIndex * 22; // 20 + 10%
+                }
+            } else if (smileIndex < 0) {
+                // 찡그린 표정 (88점 미만)
+                // 조금 찡그린 경우 77점 (70 + 10%)
+                // 많이 찡그린 경우 66점 (60 + 10%)
+                if (smileIndex < -1.0) {
+                    newScore = 66;
+                } else {
+                    newScore = 88 + smileIndex * 11; // -1.0이면 77점
+                }
+            }
+            
+            // 점수 범위 제한 (66-100)
+            newScore = Math.max(66, Math.min(100, newScore));
+            
+            // 부드러운 변화를 위한 스무딩
+            const smoothingFactor = 0.25; // 더 빠르게 반응하도록 추가 조정
+            const smoothedScore = expressionState.currentScore * (1 - smoothingFactor) + newScore * smoothingFactor;
+            
+            updateScore(smoothedScore);
         } else {
-            // 찡그린 표정: 1.0-0.5 범위를 50-0으로 매핑
-            // 찡그림 감지에 덜 민감하게 조정
-            newScore = 50 - (1.0 - smileFactor) * 80;
+            console.error("유효하지 않은 계산 결과:", { widthFactor, heightFactor });
         }
-        
-        // 점수 변화를 더 부드럽게 함
-        const smoothingFactor = 0.15;
-        const smoothedScore = expressionState.currentScore * (1 - smoothingFactor) + newScore * smoothingFactor;
-        
-        updateScore(smoothedScore);
     }
 }
 
@@ -417,6 +487,41 @@ function drawKeypoints(pose) {
         );
         ctx.stroke();
     }
+}
+
+// 앱 초기화 함수
+function resetApp() {
+    // 비디오 스트림 중지
+    if (video && video.srcObject) {
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+    }
+    
+    // 화면 초기화
+    videoElement.style.display = 'none';
+    videoElement.srcObject = null;
+    ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    // 상태 초기화
+    expressionState = {
+        calibrated: false,
+        baselineEyeDistance: 0,
+        baselineMouthHeight: 0,
+        baselineMouthWidth: 0,
+        currentScore: 88  // 기본 점수로 초기화
+    };
+    
+    // 버튼 및 메시지 상태 초기화
+    startButton.disabled = false;
+    startButton.classList.remove('hidden');
+    resetButton.classList.add('hidden');
+    statusElement.textContent = "모델 로딩 완료! 카메라를 시작해주세요.";
+    statusElement.classList.remove('hidden');
+    calibrationElement.classList.remove('active');
+    
+    // 점수와 이모지 초기화
+    updateScore(88);
+    messageElement.textContent = "시작 버튼을 눌러 측정을 시작하세요.";
 }
 
 // Initialize the app when the page loads
