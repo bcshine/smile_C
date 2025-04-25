@@ -4,10 +4,34 @@ const canvas = document.getElementById('face-points');
 const ctx = canvas.getContext('2d');
 const scoreValue = document.getElementById('score-value');
 const message = document.getElementById('message');
+const videoWrapper = document.getElementById('video-wrapper');
 
 // 앱 상태 변수
 let isRunning = false;
 let currentScore = 80; // 기본 점수
+let isMobile = window.innerWidth <= 480; // 모바일 기기 여부
+
+// 창 크기 변경 감지
+window.addEventListener('resize', () => {
+    isMobile = window.innerWidth <= 480;
+    if (video.videoWidth > 0) {
+        // 비디오가 로드된 상태에서만 캔버스 크기 조정
+        resizeCanvas();
+    }
+});
+
+// 캔버스 크기 조정 함수
+function resizeCanvas() {
+    const videoEl = video;
+    const wrapperWidth = videoWrapper.clientWidth;
+    const wrapperHeight = videoWrapper.clientHeight;
+    
+    // 비디오 요소와 캔버스의 크기를 wrapper에 맞춤
+    canvas.width = wrapperWidth;
+    canvas.height = wrapperHeight;
+    
+    console.log(`캔버스 크기 조정: ${canvas.width} x ${canvas.height}`);
+}
 
 // Face-API.js 모델 로드 및 앱 초기화
 async function init() {
@@ -42,10 +66,18 @@ async function setupCamera() {
     try {
         // 카메라 액세스 시도
         console.log("카메라 액세스 요청 중...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+        
+        // 모바일 환경에서는 후면 카메라 먼저 시도하고 실패하면 전면카메라 사용
+        let constraints = {
+            video: {
+                facingMode: { ideal: 'user' },
+                width: { ideal: isMobile ? 480 : 640 },
+                height: { ideal: isMobile ? 480 : 480 }
+            },
             audio: false
-        });
+        };
+        
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         
         console.log("카메라 액세스 성공!");
         
@@ -56,8 +88,9 @@ async function setupCamera() {
             video.onloadedmetadata = () => {
                 // 비디오 요소에 크기가 설정된 후 캔버스 크기도 설정
                 console.log("비디오 메타데이터 로드됨, 크기:", video.videoWidth, "x", video.videoHeight);
-                canvas.width = video.clientWidth || video.videoWidth;
-                canvas.height = video.clientHeight || video.videoHeight;
+                
+                // 캔버스 크기 조정
+                resizeCanvas();
                 
                 // 비디오가 준비되면 재생 시작
                 video.play().then(() => {
@@ -112,7 +145,7 @@ async function detectFace() {
         // 얼굴이 감지되면 표정 분석
         if (detections) {
             // 크기 조정 (비디오 크기와 캔버스 크기가 다를 경우)
-            const displaySize = { width: video.clientWidth, height: video.clientHeight };
+            const displaySize = { width: canvas.width, height: canvas.height };
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
             
             // 랜드마크 그리기 (시각화)
