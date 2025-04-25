@@ -67,12 +67,12 @@ async function setupCamera() {
         // 카메라 액세스 시도
         console.log("카메라 액세스 요청 중...");
         
-        // 모바일 환경에서는 후면 카메라 먼저 시도하고 실패하면 전면카메라 사용
+        // 세로 화면에 최적화된 비디오 설정
         let constraints = {
             video: {
                 facingMode: { ideal: 'user' },
                 width: { ideal: isMobile ? 480 : 640 },
-                height: { ideal: isMobile ? 480 : 480 }
+                height: { ideal: isMobile ? 640 : 720 } // 세로 비율 높임
             },
             audio: false
         };

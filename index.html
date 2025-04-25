@@ -24,6 +24,15 @@
             padding: 10px;
         }
         
+        .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        
         #container {
             position: relative;
             width: 100%;
@@ -34,7 +43,7 @@
         #video-wrapper {
             position: relative;
             width: 100%;
-            padding-top: 75%; /* 4:3 비율 유지 */
+            padding-top: 120%; /* 5:6 비율 (세로로 더 길게) */
             overflow: hidden;
             border-radius: 10px;
             background-color: #000;
@@ -90,8 +99,13 @@
                 padding: 5px;
             }
             
+            .title {
+                font-size: 24px;
+                margin-bottom: 15px;
+            }
+            
             #video-wrapper {
-                padding-top: 100%; /* 모바일에서는 1:1 비율로 변경 */
+                padding-top: 130%; /* 모바일에서는 더 세로로 길게 */
             }
             
             #score-box {
@@ -110,6 +124,7 @@
     </style>
 </head>
 <body>
+    <h1 class="title">스마일 채점기</h1>
     <div id="container">
         <div id="video-wrapper">
             <video id="video" autoplay muted playsinline></video>
