@@ -292,6 +292,20 @@
             cursor: pointer;
             margin-top: 10px;
         }
+
+        #login-message {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+        }
+
+        #main-content {
+            display: none;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -325,15 +339,22 @@
         </div>
     </div>
 
-    <div id="container">
-        <div id="video-wrapper">
-            <div class="quote-text">웃지 않으려거든 가게문을 열지마라</div>
-            <video id="video" autoplay muted playsinline></video>
-            <canvas id="face-points"></canvas>
-        </div>
-        <div id="score-box">
-            <span id="score-value">80</span><span>점</span>
-            <div id="message">카메라를 켜는 중...</div>
+    <div id="login-message">
+        <h2>로그인이 필요합니다</h2>
+        <p>서비스를 이용하려면 로그인해주세요.</p>
+    </div>
+
+    <div id="main-content">
+        <div id="container">
+            <div id="video-wrapper">
+                <div class="quote-text">웃지 않으려거든 가게문을 열지마라</div>
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="face-points"></canvas>
+            </div>
+            <div id="score-box">
+                <span id="score-value">80</span><span>점</span>
+                <div id="message">카메라를 켜는 중...</div>
+            </div>
         </div>
     </div>
 
@@ -342,7 +363,7 @@
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -370,6 +391,8 @@
         const googleLoginBtn = document.getElementById('googleLoginBtn');
         const userInfo = document.querySelector('.user-info');
         const userEmail = document.querySelector('.user-email');
+        const mainContent = document.getElementById('main-content');
+        const loginMessage = document.getElementById('login-message');
 
         // Event Listeners
         loginBtn.addEventListener('click', () => {
@@ -405,21 +428,26 @@
         logoutBtn.addEventListener('click', async () => {
             try {
                 await signOut(auth);
+                window.location.href = 'login.html';
             } catch (error) {
-                alert('로그아웃 실패: ' + error.message);
+                console.error('로그아웃 실패:', error);
             }
         });
 
-        // Auth state observer
-        auth.onAuthStateChanged((user) => {
+        // 인증 상태 변경 감지
+        onAuthStateChanged(auth, (user) => {
             if (user) {
+                // 로그인 상태
                 loginBtn.style.display = 'none';
                 userInfo.style.display = 'flex';
                 userEmail.textContent = user.email;
+                mainContent.style.display = 'block';
+                loginMessage.style.display = 'none';
+                // 카메라 초기화
+                init();
             } else {
-                loginBtn.style.display = 'block';
-                userInfo.style.display = 'none';
-                userEmail.textContent = '';
+                // 비로그인 상태
+                window.location.href = 'login.html';
             }
         });
 
