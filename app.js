@@ -55,6 +55,7 @@ function setVideoSize() {
             const videoRatio = video.videoWidth / video.videoHeight;
             const containerRatio = containerWidth / containerHeight;
             
+            // 캔버스 크기 설정
             if (videoRatio > containerRatio) {
                 // 비디오가 가로로 더 길 경우
                 canvas.width = containerWidth;
@@ -67,8 +68,14 @@ function setVideoSize() {
             
             // 캔버스 중앙 정렬
             canvas.style.position = 'absolute';
-            canvas.style.left = (containerWidth - canvas.width) / 2 + 'px';
-            canvas.style.top = (containerHeight - canvas.height) / 2 + 'px';
+            canvas.style.left = '50%';
+            canvas.style.top = '50%';
+            canvas.style.transform = 'translate(-50%, -50%)';
+            
+            // 비디오 요소 크기 조정
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'cover';
         } else {
             // 데스크톱에서는 원본 크기 유지
             canvas.width = video.videoWidth;
@@ -257,33 +264,36 @@ async function startFaceDetection() {
         .withFaceLandmarks()
         .withFaceExpressions();
 
-        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        // 모바일 기기 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // 모바일에서는 비디오 크기에 맞춰서 감지 결과 조정
+        const displaySize = isMobile ? 
+            { width: video.videoWidth, height: video.videoHeight } : 
+            { width: video.videoWidth, height: video.videoHeight };
+            
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
         // 캔버스 초기화
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 얼굴 감지 결과 그리기
-        // faceapi.draw.drawDetections(canvas, resizedDetections);
-        // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-
         if (detections.length > 0) {
             debugLog('얼굴 감지됨');
             const detection = detections[0];
             
-            // 입 부분 그리기 제거
-            // const mouth = detection.landmarks.getMouth();
-            // ctx.beginPath();
-            // ctx.strokeStyle = '#3498db';
-            // ctx.lineWidth = 1.5;
-            // ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            // ctx.moveTo(mouth[0].x, mouth[0].y);
-            // for (let i = 1; i < mouth.length; i++) {
-            //     ctx.lineTo(mouth[i].x, mouth[i].y);
-            // }
-            // ctx.closePath();
-            // ctx.stroke();
-            // ctx.setLineDash([]); // 점선 패턴 초기화
+            // 입 부분 그리기
+            const mouth = detection.landmarks.getMouth();
+            ctx.beginPath();
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]); // 점선 패턴 설정
+            ctx.moveTo(mouth[0].x, mouth[0].y);
+            for (let i = 1; i < mouth.length; i++) {
+                ctx.lineTo(mouth[i].x, mouth[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]); // 점선 패턴 초기화
 
             // 눈썹 부분만 그리기
             const leftEyebrow = detection.landmarks.getLeftEyeBrow();
