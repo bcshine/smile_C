@@ -29,37 +29,12 @@
         }
         
         .title {
-            font-family: 'Jua', sans-serif;
-            font-size: 5cqb;
-            font-weight: 500;
+            font-size: 28px;
+            font-weight: bold;
             color: #3498db;
             margin-bottom: 20px;
             text-align: center;
             width: 100%;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            letter-spacing: 1px;
-            position: relative;
-            padding-bottom: 10px;
-        }
-        
-        .title::after {
-            content: "😊";
-            font-size: 24px;
-            position: absolute;
-            margin-left: 8px;
-            top: 0;
-        }
-        
-        .title::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 3px;
-            background: linear-gradient(to right, transparent, #3498db, transparent);
-            border-radius: 2px;
         }
         
         #container {
@@ -72,7 +47,7 @@
         #video-wrapper {
             position: relative;
             width: 100%;
-            padding-top: 120%; /* 5:6 비율 (세로로 더 길게) */
+            padding-top: 75%; /* 4:3 비율 유지 */
             overflow: hidden;
             border-radius: 10px;
             background-color: #000;
@@ -134,16 +109,12 @@
             }
             
             .title {
-                font-size: 28px;
+                font-size: 24px;
                 margin-bottom: 15px;
             }
             
-            .title::after {
-                font-size: 20px;
-            }
-            
             #video-wrapper {
-                padding-top: 130%; /* 모바일에서는 더 세로로 길게 */
+                padding-top: 100%; /* 모바일에서는 1:1 비율로 변경 */
             }
             
             #score-box {
@@ -162,7 +133,7 @@
     </style>
 </head>
 <body>
-    <h1 class="title">중간계 스마일 채점기</h1>
+    <h1 class="title">스마일 채점기</h1>
     <div id="container">
         <div id="video-wrapper">
             <video id="video" autoplay muted playsinline></video>
