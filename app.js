@@ -271,19 +271,19 @@ async function startFaceDetection() {
             debugLog('얼굴 감지됨');
             const detection = detections[0];
             
-            // 입 부분만 그리기
-            const mouth = detection.landmarks.getMouth();
-            ctx.beginPath();
-            ctx.strokeStyle = '#3498db';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            ctx.moveTo(mouth[0].x, mouth[0].y);
-            for (let i = 1; i < mouth.length; i++) {
-                ctx.lineTo(mouth[i].x, mouth[i].y);
-            }
-            ctx.closePath();
-            ctx.stroke();
-            ctx.setLineDash([]); // 점선 패턴 초기화
+            // 입 부분 그리기 제거
+            // const mouth = detection.landmarks.getMouth();
+            // ctx.beginPath();
+            // ctx.strokeStyle = '#3498db';
+            // ctx.lineWidth = 1.5;
+            // ctx.setLineDash([3, 3]); // 점선 패턴 설정
+            // ctx.moveTo(mouth[0].x, mouth[0].y);
+            // for (let i = 1; i < mouth.length; i++) {
+            //     ctx.lineTo(mouth[i].x, mouth[i].y);
+            // }
+            // ctx.closePath();
+            // ctx.stroke();
+            // ctx.setLineDash([]); // 점선 패턴 초기화
 
             // 눈썹 부분만 그리기
             const leftEyebrow = detection.landmarks.getLeftEyeBrow();
