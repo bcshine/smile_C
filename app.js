@@ -171,10 +171,8 @@ async function detectFace() {
         
         if (detections) {
             const displaySize = { width: canvas.width, height: canvas.height };
-            console.log('얼굴 감지:', displaySize); // TODO: Debug용. 나중에 지울 것
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
             
-            drawLandmarks(resizedDetections);
             analyzeSmile(resizedDetections);
         } else {
             message.innerText = '얼굴이 감지되지 않았습니다';
@@ -190,33 +188,33 @@ async function detectFace() {
     }
 }
 
-// 얼굴 랜드마크 그리기
-function drawLandmarks(detections) {
-    // 얼굴 윤곽선 그리기
-    ctx.beginPath();
-    ctx.strokeStyle = '#3498db';
-    ctx.lineWidth = 2;
+// 얼굴 랜드마크 그리기 - 현재 사용하지 않음.
+// function drawLandmarks(detections) {
+//     // 얼굴 윤곽선 그리기
+//     ctx.beginPath();
+//     ctx.strokeStyle = '#3498db';
+//     ctx.lineWidth = 2;
     
-    // 입 부분만 강조해서 그리기
-    const mouth = detections.landmarks.getMouth();
-    ctx.moveTo(mouth[0].x, mouth[0].y);
-    for (let i = 1; i < mouth.length; i++) {
-        ctx.lineTo(mouth[i].x, mouth[i].y);
-    }
-    ctx.closePath();
-    ctx.stroke();
+//     // 입 부분만 강조해서 그리기
+//     const mouth = detections.landmarks.getMouth();
+//     ctx.moveTo(mouth[0].x, mouth[0].y);
+//     for (let i = 1; i < mouth.length; i++) {
+//         ctx.lineTo(mouth[i].x, mouth[i].y);
+//     }
+//     ctx.closePath();
+//     ctx.stroke();
     
-    // 눈썹과 눈도 간단히 표시
-    const leftEye = detections.landmarks.getLeftEye();
-    const rightEye = detections.landmarks.getRightEye();
-    const leftEyebrow = detections.landmarks.getLeftEyeBrow();
-    const rightEyebrow = detections.landmarks.getRightEyeBrow();
+//     // 눈썹과 눈도 간단히 표시
+//     const leftEye = detections.landmarks.getLeftEye();
+//     const rightEye = detections.landmarks.getRightEye();
+//     const leftEyebrow = detections.landmarks.getLeftEyeBrow();
+//     const rightEyebrow = detections.landmarks.getRightEyeBrow();
     
-    drawPoints(leftEye, 2, '#3498db');
-    drawPoints(rightEye, 2, '#3498db');
-    drawPoints(leftEyebrow, 2, '#3498db');
-    drawPoints(rightEyebrow, 2, '#3498db');
-}
+//     drawPoints(leftEye, 2, '#3498db');
+//     drawPoints(rightEye, 2, '#3498db');
+//     drawPoints(leftEyebrow, 2, '#3498db');
+//     drawPoints(rightEyebrow, 2, '#3498db');
+// }
 
 // 점 그리기 헬퍼 함수
 function drawPoints(points, radius, color) {
