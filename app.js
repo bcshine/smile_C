@@ -11,6 +11,8 @@ let currentScore = 80;
 let isVideoReady = false;
 let currentZoom = 1.0;
 let videoTrack = null;
+let fps = 0;
+let lastTime = performance.now();
 
 // 디버깅을 위한 로그 함수
 function debugLog(message) {
@@ -248,6 +250,41 @@ function updateScore(score) {
     }
 }
 
+// 메모리 정리 함수
+function cleanup() {
+    if (videoTrack) {
+        videoTrack.stop();
+        videoTrack = null;
+    }
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    debugLog('리소스 정리 완료');
+}
+
+// 성능 모니터링 함수
+function monitorPerformance() {
+    function updateFPS() {
+        const now = performance.now();
+        fps = 1000 / (now - lastTime);
+        lastTime = now;
+        debugLog(`FPS: ${fps.toFixed(1)}`);
+    }
+    
+    setInterval(updateFPS, 1000);
+}
+
+// 네트워크 상태 확인 함수
+function checkNetworkStatus() {
+    window.addEventListener('online', () => {
+        debugLog('네트워크 연결됨');
+    });
+    window.addEventListener('offline', () => {
+        debugLog('네트워크 연결 끊김');
+    });
+}
+
 // 얼굴 감지 시작
 async function startFaceDetection() {
     if (!isVideoReady) {
@@ -347,6 +384,12 @@ async function init() {
     const cameraInitialized = await initCamera();
     if (!cameraInitialized) return;
 
+    // 성능 모니터링 시작
+    monitorPerformance();
+
+    // 네트워크 상태 확인 시작
+    checkNetworkStatus();
+
     // 얼굴 감지 시작
     startFaceDetection();
 }
@@ -391,6 +434,9 @@ function drawPoints(points, radius, color) {
         ctx.fill();
     }
 }
+
+// 페이지 언로드 시 정리
+window.addEventListener('beforeunload', cleanup);
 
 // 브라우저가 로드되면 앱 초기화
 window.addEventListener('load', init); 
