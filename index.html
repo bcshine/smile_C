@@ -411,15 +411,20 @@
         
         #score-box {
             margin-top: 20px;
-            text-align: center;
-            font-size: 50px;
-            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 15px;
             background-color: white;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             width: 100%;
             font-family: 'BMJUA', sans-serif;
+        }
+
+        .score-container {
+            display: flex;
+            align-items: center;
         }
         
         #score-value {
@@ -429,7 +434,26 @@
             margin-right: 10px;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
-        
+
+        .capture-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'BMJUA', sans-serif;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .capture-btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
         #message {
             margin-top: 10px;
             font-size: 18px;
@@ -826,8 +850,11 @@
                 <canvas id="face-points"></canvas>
             </div>
             <div id="score-box">
-                <span id="score-value">80</span><span>점</span>
-                <div id="message">카메라를 켜는 중...</div>
+                <div class="score-container">
+                    <span id="score-value">80</span><span>점</span>
+                    <div id="message">카메라를 켜는 중...</div>
+                </div>
+                <button class="capture-btn" onclick="captureImage()">캡쳐</button>
             </div>
         </div>
     </div>
@@ -835,6 +862,30 @@
     <!-- Face-API.js -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="app.js"></script>
+    <script>
+        // 캡쳐 기능
+        async function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            // 비디오 크기로 캔버스 설정
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // 비디오 프레임을 캔버스에 그리기
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 캔버스의 내용을 이미지로 변환
+            const image = canvas.toDataURL('image/png');
+            
+            // 이미지 다운로드
+            const link = document.createElement('a');
+            link.download = '스마일_점수_' + document.getElementById('score-value').textContent + '점.png';
+            link.href = image;
+            link.click();
+        }
+    </script>
 
     <!-- 프로필 모달 -->
     <div id="profileModal" class="modal">
