@@ -142,20 +142,34 @@ async function initCamera() {
 }
 
 // 줌 조정 함수
-function adjustZoom(delta) {
+async function adjustZoom(delta) {
     if (!videoTrack) return;
     
     try {
-        const capabilities = videoTrack.getCapabilities();
-        if (capabilities.zoom) {
-            currentZoom = Math.max(1.0, Math.min(5.0, currentZoom + delta));
-            videoTrack.applyConstraints({
-                advanced: [{ zoom: currentZoom }]
-            });
-            debugLog(`줌 레벨: ${currentZoom.toFixed(1)}`);
-        }
+        const settings = videoTrack.getSettings();
+        const currentWidth = settings.width;
+        const currentHeight = settings.height;
+        
+        // 새로운 크기 계산 (delta가 양수면 확대, 음수면 축소)
+        const scale = delta > 0 ? 1.1 : 0.9;
+        const newWidth = Math.round(currentWidth * scale);
+        const newHeight = Math.round(currentHeight * scale);
+        
+        // 최소/최대 크기 제한
+        const minWidth = 320;
+        const maxWidth = 1920;
+        const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        const constrainedHeight = Math.round(constrainedWidth * (currentHeight / currentWidth));
+        
+        await videoTrack.applyConstraints({
+            width: constrainedWidth,
+            height: constrainedHeight
+        });
+        
+        debugLog(`화면 크기 조정: ${constrainedWidth}x${constrainedHeight}`);
     } catch (error) {
         console.error('줌 조정 실패:', error);
+        debugLog('줌 조정 실패: ' + error.message);
     }
 }
 
