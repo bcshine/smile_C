@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>로그인 - 중간계 스마일 채점기</title>
+    <!-- 구글 폰트 추가 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwx7sfeHtmqxb3D-CkyB4DBtFFEpG0ADw",
+            authDomain: "smile-c-b8074.firebaseapp.com",
+            projectId: "smile-c-b8074",
+            storageBucket: "smile-c-b8074.firebasestorage.app",
+            messagingSenderId: "747999033560",
+            appId: "1:747999033560:web:53d62a80b2086bc3f1ffad",
+            measurementId: "G-TK56LG30CK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+
+        // 자동 로그인 정보 저장
+        function saveLoginInfo(email, password) {
+            localStorage.setItem('autoLoginEmail', email);
+            localStorage.setItem('autoLoginPassword', password);
+        }
+
+        // 자동 로그인 정보 삭제
+        function clearLoginInfo() {
+            localStorage.removeItem('autoLoginEmail');
+            localStorage.removeItem('autoLoginPassword');
+        }
+
+        // 자동 로그인 시도
+        async function tryAutoLogin() {
+            const email = localStorage.getItem('autoLoginEmail');
+            const password = localStorage.getItem('autoLoginPassword');
+            
+            if (email && password) {
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    console.error("자동 로그인 실패:", error);
+                    clearLoginInfo();
+                }
+            }
+        }
+
+        // 페이지 로드 시 자동 로그인 시도
+        document.addEventListener('DOMContentLoaded', function() {
+            tryAutoLogin();
+        });
+
+        // 이메일/비밀번호 로그인 함수
+        window.signIn = async function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+            const rememberMe = document.getElementById('remember-me').checked;
+
+            try {
+                // 로그인 진행 중 메시지 표시
+                errorMessage.textContent = '로그인을 진행중입니다...';
+                errorMessage.style.color = '#3498db';
+
+                await signInWithEmailAndPassword(auth, email, password);
+                
+                // 자동 로그인 정보 저장
+                if (rememberMe) {
+                    saveLoginInfo(email, password);
+                } else {
+                    clearLoginInfo();
+                }
+                
+                // 성공 메시지 표시
+                errorMessage.textContent = '로그인 성공!';
+                errorMessage.style.color = '#2ecc71';
+
+            } catch (error) {
+                console.error("로그인 실패:", error);
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage.textContent = '등록되지 않은 이메일입니다.';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage.textContent = '비밀번호가 일치하지 않습니다.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage.textContent = '올바른 이메일 형식을 입력해주세요.';
+                        break;
+                    default:
+                        errorMessage.textContent = '로그인에 실패했습니다. 다시 시도해주세요.';
+                }
+                errorMessage.style.color = '#e74c3c';
+            }
+        };
+
+        // 인증 상태 변경 감지
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .login-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .title {
+            font-family: 'Jua', sans-serif;
+            font-size: 32px;
+            color: #3498db;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .description {
+            font-family: 'Nanum Pen Script', cursive;
+            font-size: 24px;
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-family: 'Jua', sans-serif;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+
+        .button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Jua', sans-serif;
+            font-size: 18px;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .button:hover {
+            background-color: #2980b9;
+        }
+
+        #error-message {
+            color: #e74c3c;
+            margin-top: 20px;
+            font-family: 'Jua', sans-serif;
+            font-size: 16px;
+            min-height: 24px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .signup-link {
+            margin-top: 20px;
+            font-family: 'Jua', sans-serif;
+            color: #555;
+        }
+
+        .signup-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-family: 'Jua', sans-serif;
+            color: #555;
+        }
+
+        .remember-me input {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">😊</div>
+        <h1 class="title">중간계 스마일 채점기</h1>
+        <p class="description">당신의 미소를 측정하고 기록해보세요!</p>
+        
+        <div class="input-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" placeholder="이메일을 입력하세요" required>
+        </div>
+        
+        <div class="input-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
+        </div>
+
+        <div class="remember-me">
+            <input type="checkbox" id="remember-me">
+            <label for="remember-me">자동 로그인</label>
+        </div>
+
+        <button class="button" onclick="signIn()">로그인</button>
+        
+        <div class="signup-link">
+            아직 계정이 없으신가요? <a href="signup.html">회원가입</a>
+        </div>
+
+        <div id="error-message"></div>
+    </div>
+</body>
+</html> 

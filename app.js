@@ -7,164 +7,301 @@ const message = document.getElementById('message');
 const videoWrapper = document.getElementById('video-wrapper');
 
 // 앱 상태 변수
-let isRunning = false;
-let currentScore = 80; // 기본 점수
-let isMobile = window.innerWidth <= 480; // 모바일 기기 여부
+let currentScore = 80;
+let isVideoReady = false;
 
-// 창 크기 변경 감지
-window.addEventListener('resize', () => {
-    isMobile = window.innerWidth <= 480;
-    if (video.videoWidth > 0) {
-        // 비디오가 로드된 상태에서만 캔버스 크기 조정
-        resizeCanvas();
-    }
-});
-
-// 캔버스 크기 조정 함수
-function resizeCanvas() {
-    const videoEl = video;
-    const wrapperWidth = videoWrapper.clientWidth;
-    const wrapperHeight = videoWrapper.clientHeight;
-    
-    // 비디오 요소와 캔버스의 크기를 wrapper에 맞춤
-    canvas.width = wrapperWidth;
-    canvas.height = wrapperHeight;
-    
-    console.log(`캔버스 크기 조정: ${canvas.width} x ${canvas.height}`);
+// 디버깅을 위한 로그 함수
+function debugLog(message) {
+    console.log(`[DEBUG] ${message}`);
+    document.getElementById('message').textContent = message;
 }
 
-// Face-API.js 모델 로드 및 앱 초기화
-async function init() {
-    message.innerText = '모델을 로딩하는 중...';
-    
+// Face-API.js 모델 로드
+async function loadModels() {
     try {
-        // 모델 경로 설정 - CDN에서 직접 로드
+        debugLog('얼굴 인식 모델을 로드하는 중...');
+        
+        // CDN에서 직접 모델 로드
         const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
         
-        // Face-API.js 모델 로드 - CDN 경로 직접 지정
         await Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
         ]);
         
-        message.innerText = '모델 로딩 완료, 카메라 시작 중...';
-        
-        // 카메라 시작
-        await setupCamera();
-        message.innerText = '얼굴을 카메라에 맞춰주세요';
-        
-        // 얼굴 감지 시작
-        startFaceDetection();
+        debugLog('모델 로드 완료');
+        return true;
     } catch (error) {
-        console.error('초기화 실패:', error);
-        message.innerText = '카메라 접근에 실패했습니다: ' + error.message;
+        debugLog('모델 로드 실패: ' + error.message);
+        return false;
     }
 }
 
-// 카메라 설정
-async function setupCamera() {
+// 비디오 크기 설정 함수
+function setVideoSize() {
+    if (video.videoWidth && video.videoHeight) {
+        // 모바일 기기 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            // 모바일에서는 화면 크기에 맞춤
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            
+            // 비디오 비율 계산
+            const videoRatio = video.videoWidth / video.videoHeight;
+            const containerRatio = containerWidth / containerHeight;
+            
+            if (videoRatio > containerRatio) {
+                // 비디오가 가로로 더 길 경우
+                canvas.width = containerWidth;
+                canvas.height = containerWidth / videoRatio;
+            } else {
+                // 비디오가 세로로 더 길 경우
+                canvas.height = containerHeight;
+                canvas.width = containerHeight * videoRatio;
+            }
+            
+            // 캔버스 중앙 정렬
+            canvas.style.position = 'absolute';
+            canvas.style.left = (containerWidth - canvas.width) / 2 + 'px';
+            canvas.style.top = (containerHeight - canvas.height) / 2 + 'px';
+        } else {
+            // 데스크톱에서는 원본 크기 유지
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.style.position = 'static';
+        }
+        
+        debugLog(`비디오 크기: ${video.videoWidth}x${video.videoHeight}`);
+        debugLog(`캔버스 크기: ${canvas.width}x${canvas.height}`);
+        isVideoReady = true;
+    }
+}
+
+// 카메라 초기화
+async function initCamera() {
     try {
-        // 카메라 액세스 시도
-        console.log("카메라 액세스 요청 중...");
+        debugLog('카메라 초기화 중...');
         
-        // 세로 화면에 최적화된 비디오 설정
-        let constraints = {
+        // 모바일 기기 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // 카메라 제약 조건 설정
+        const constraints = {
             video: {
-                facingMode: { ideal: 'user' },
-                width: { ideal: isMobile ? 480 : 640 },
-                height: { ideal: isMobile ? 640 : 720 } // 세로 비율 높임
-            },
-            audio: false
+                width: isMobile ? { ideal: window.innerWidth } : { ideal: 640 },
+                height: isMobile ? { ideal: window.innerHeight } : { ideal: 480 },
+                facingMode: "user",
+                aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3
+            }
         };
-        
+
+        // 카메라 스트림 가져오기
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        
-        console.log("카메라 액세스 성공!");
-        
-        // 비디오 소스 설정
+        debugLog('카메라 스트림 획득 성공');
+
+        // 비디오 요소 설정
         video.srcObject = stream;
         
-        return new Promise((resolve) => {
+        // 비디오 메타데이터 로드 대기
+        await new Promise((resolve) => {
             video.onloadedmetadata = () => {
-                // 비디오 요소에 크기가 설정된 후 캔버스 크기도 설정
-                console.log("비디오 메타데이터 로드됨, 크기:", video.videoWidth, "x", video.videoHeight);
-                
-                // 캔버스 크기 조정
-                resizeCanvas();
-                
-                // 비디오가 준비되면 재생 시작
-                video.play().then(() => {
-                    console.log("비디오 재생 시작");
-                    resolve();
-                }).catch(err => {
-                    console.error("비디오 재생 실패:", err);
-                    resolve(); // 재생에 실패해도 진행
-                });
-            };
-            
-            // 오류 처리
-            video.onerror = (err) => {
-                console.error("비디오 요소 오류:", err);
-                message.innerText = "비디오 로드 중 오류가 발생했습니다";
-                resolve(); // 오류가 발생해도 진행
+                setVideoSize();
+                resolve();
             };
         });
+
+        // 비디오 크기 변경 감지
+        video.addEventListener('resize', setVideoSize);
+
+        // 화면 방향 변경 감지
+        window.addEventListener('orientationchange', () => {
+            setTimeout(setVideoSize, 100);
+        });
+
+        // 비디오 재생
+        await video.play();
+        debugLog('비디오 재생 시작');
+
+        return true;
     } catch (error) {
-        console.error("카메라 액세스 오류:", error);
-        // 더 자세한 오류 메시지 표시
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-            throw new Error('카메라 권한이 거부되었습니다. 브라우저 설정에서 카메라 접근을 허용해주세요.');
-        } else if (error.name === 'NotFoundError') {
-            throw new Error('카메라를 찾을 수 없습니다. 카메라가 연결되어 있는지 확인해주세요.');
-        } else {
-            throw new Error(`카메라에 접근할 수 없습니다: ${error.message}`);
-        }
+        debugLog('카메라 초기화 실패: ' + error.message);
+        return false;
     }
 }
 
-// 얼굴 감지 및 표정 분석 시작
-function startFaceDetection() {
-    isRunning = true;
-    detectFace();
+// 스마일 점수 계산 함수
+function calculateSmileScore(detection) {
+    try {
+        const mouth = detection.landmarks.getMouth();
+        
+        // 입 모양 분석을 위한 주요 포인트
+        const topLip = mouth[14]; // 윗입술 중앙
+        const bottomLip = mouth[18]; // 아랫입술 중앙
+        const leftCorner = mouth[0]; // 왼쪽 입꼬리
+        const rightCorner = mouth[6]; // 오른쪽 입꼬리
+        
+        // 입 높이와 너비 계산
+        const mouthHeight = Math.abs(bottomLip.y - topLip.y);
+        const mouthWidth = Math.abs(rightCorner.x - leftCorner.x);
+        
+        // 입꼬리 위치 분석 (윗입술 높이 대비)
+        const leftCornerHeight = topLip.y - leftCorner.y;
+        const rightCornerHeight = topLip.y - rightCorner.y;
+        
+        // 입 모양 분석: U 모양 (웃음) vs 역 U 모양 (찡그림)
+        const cornerAvgHeight = (leftCornerHeight + rightCornerHeight) / 2;
+        
+        // 미소 지수 계산 (양수: 웃음, 음수: 찡그림)
+        const smileIndex = cornerAvgHeight / mouthHeight * 3;
+        
+        // 점수 계산 (범위: 60-95)
+        let score = 80; // 기본 점수
+        
+        if (smileIndex > 0) {
+            // 웃는 얼굴 (80 이상)
+            score = 80 + smileIndex * 15;
+            if (score > 95) score = 95; // 최대 95점
+        } else {
+            // 찡그린 얼굴 (80 이하)
+            score = 80 + smileIndex * 20;
+            if (score < 60) score = 60; // 최소 60점
+        }
+        
+        debugLog(`스마일 점수 계산: ${score} (smileIndex: ${smileIndex})`);
+        return score;
+    } catch (error) {
+        console.error('스마일 점수 계산 오류:', error);
+        return 80; // 오류 발생 시 기본 점수 반환
+    }
 }
 
-// 실시간 얼굴 감지 및 분석
-async function detectFace() {
-    if (!isRunning) return;
+// 점수 업데이트 함수
+function updateScore(score) {
+    // 점수 부드럽게 변경
+    currentScore = currentScore * 0.7 + score * 0.3;
+    scoreValue.textContent = Math.round(currentScore);
     
+    // 메시지 업데이트
+    if (currentScore >= 95) {
+        message.textContent = '환한 미소가 아름다워요!';
+    } else if (currentScore >= 90) {
+        message.textContent = '기분 좋은 미소네요!';
+    } else if (currentScore >= 85) {
+        message.textContent = '살짝 웃고 있네요!';
+    } else if (currentScore >= 75) {
+        message.textContent = '자연스러운 표정입니다.';
+    } else if (currentScore >= 70) {
+        message.textContent = '조금 찡그리고 있어요.';
+    } else {
+        message.textContent = '많이 찡그리고 있어요. 힘내세요!';
+    }
+}
+
+// 얼굴 감지 시작
+async function startFaceDetection() {
+    if (!isVideoReady) {
+        debugLog('비디오가 준비되지 않았습니다. 대기 중...');
+        setTimeout(startFaceDetection, 100);
+        return;
+    }
+
     try {
-        // 얼굴 및 랜드마크 감지
-        const detections = await faceapi.detectSingleFace(
-            video, 
-            new faceapi.TinyFaceDetectorOptions()
-        ).withFaceLandmarks();
-        
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
+            inputSize: 320,
+            scoreThreshold: 0.5
+        }))
+        .withFaceLandmarks()
+        .withFaceExpressions();
+
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+
         // 캔버스 초기화
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 얼굴이 감지되면 표정 분석
-        if (detections) {
-            // 크기 조정 (비디오 크기와 캔버스 크기가 다를 경우)
-            const displaySize = { width: canvas.width, height: canvas.height };
-            const resizedDetections = faceapi.resizeResults(detections, displaySize);
+
+        // 얼굴 감지 결과 그리기
+        // faceapi.draw.drawDetections(canvas, resizedDetections);
+        // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+        if (detections.length > 0) {
+            debugLog('얼굴 감지됨');
+            const detection = detections[0];
             
-            // 랜드마크 그리기 (시각화)
-            drawLandmarks(resizedDetections);
+            // 입 부분만 그리기
+            const mouth = detection.landmarks.getMouth();
+            ctx.beginPath();
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]); // 점선 패턴 설정
+            ctx.moveTo(mouth[0].x, mouth[0].y);
+            for (let i = 1; i < mouth.length; i++) {
+                ctx.lineTo(mouth[i].x, mouth[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]); // 점선 패턴 초기화
+
+            // 눈썹 부분만 그리기
+            const leftEyebrow = detection.landmarks.getLeftEyeBrow();
+            const rightEyebrow = detection.landmarks.getRightEyeBrow();
             
-            // 웃음/찡그림 분석
-            analyzeSmile(resizedDetections);
+            // 왼쪽 눈썹
+            ctx.beginPath();
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]); // 점선 패턴 설정
+            ctx.moveTo(leftEyebrow[0].x, leftEyebrow[0].y);
+            for (let i = 1; i < leftEyebrow.length; i++) {
+                ctx.lineTo(leftEyebrow[i].x, leftEyebrow[i].y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]); // 점선 패턴 초기화
+
+            // 오른쪽 눈썹
+            ctx.beginPath();
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]); // 점선 패턴 설정
+            ctx.moveTo(rightEyebrow[0].x, rightEyebrow[0].y);
+            for (let i = 1; i < rightEyebrow.length; i++) {
+                ctx.lineTo(rightEyebrow[i].x, rightEyebrow[i].y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]); // 점선 패턴 초기화
+
+            const smileScore = calculateSmileScore(detection);
+            updateScore(smileScore);
+        } else {
+            debugLog('얼굴이 감지되지 않음');
         }
-        
-        // 다음 프레임 감지
-        requestAnimationFrame(detectFace);
+
+        // 다음 프레임 처리
+        requestAnimationFrame(startFaceDetection);
     } catch (error) {
         console.error('얼굴 감지 오류:', error);
-        message.innerText = '얼굴 감지 중 오류가 발생했습니다';
-        setTimeout(() => {
-            if (isRunning) detectFace();
-        }, 1000);
+        setTimeout(startFaceDetection, 100);
     }
 }
+
+// 앱 초기화
+async function init() {
+    // 모델 로드
+    const modelsLoaded = await loadModels();
+    if (!modelsLoaded) return;
+
+    // 카메라 초기화
+    const cameraInitialized = await initCamera();
+    if (!cameraInitialized) return;
+
+    // 얼굴 감지 시작
+    startFaceDetection();
+}
+
+// 앱 시작
+init();
 
 // 얼굴 랜드마크 그리기
 function drawLandmarks(detections) {
@@ -201,68 +338,6 @@ function drawPoints(points, radius, color) {
         ctx.beginPath();
         ctx.arc(points[i].x, points[i].y, radius, 0, 2 * Math.PI);
         ctx.fill();
-    }
-}
-
-// 웃음/찡그림 분석하기
-function analyzeSmile(detections) {
-    const mouth = detections.landmarks.getMouth();
-    
-    // 입 모양 분석을 위한 주요 포인트
-    const topLip = mouth[14]; // 윗입술 중앙
-    const bottomLip = mouth[18]; // 아랫입술 중앙
-    const leftCorner = mouth[0]; // 왼쪽 입꼬리
-    const rightCorner = mouth[6]; // 오른쪽 입꼬리
-    
-    // 입 높이와 너비 계산
-    const mouthHeight = Math.abs(bottomLip.y - topLip.y);
-    const mouthWidth = Math.abs(rightCorner.x - leftCorner.x);
-    
-    // 입꼬리 위치 분석 (윗입술 높이 대비)
-    const leftCornerHeight = topLip.y - leftCorner.y;
-    const rightCornerHeight = topLip.y - rightCorner.y;
-    
-    // 입 모양 분석: U 모양 (웃음) vs 역 U 모양 (찡그림)
-    const cornerAvgHeight = (leftCornerHeight + rightCornerHeight) / 2;
-    
-    // 미소 지수 계산 (양수: 웃음, 음수: 찡그림)
-    const smileIndex = cornerAvgHeight / mouthHeight * 3; // 배율 조정
-    
-    // 점수 계산 (범위: 60-95)
-    let newScore = 80; // 기본 점수
-    
-    if (smileIndex > 0) {
-        // 웃는 얼굴 (80 이상)
-        newScore = 80 + smileIndex * 15;
-        if (newScore > 95) newScore = 95; // 최대 95점
-    } else {
-        // 찡그린 얼굴 (80 이하)
-        newScore = 80 + smileIndex * 20;
-        if (newScore < 60) newScore = 60; // 최소 60점
-    }
-    
-    // 점수 부드럽게 변경
-    currentScore = currentScore * 0.7 + newScore * 0.3;
-    scoreValue.innerText = Math.round(currentScore);
-    
-    // 메시지 업데이트
-    updateMessage(currentScore);
-}
-
-// 점수에 따른 메시지 업데이트
-function updateMessage(score) {
-    if (score >= 95) {
-        message.innerText = '환한 미소가 아름다워요!';
-    } else if (score >= 90) {
-        message.innerText = '기분 좋은 미소네요!';
-    } else if (score >= 85) {
-        message.innerText = '살짝 웃고 있네요!';
-    } else if (score >= 75) {
-        message.innerText = '자연스러운 표정입니다.';
-    } else if (score >= 70) {
-        message.innerText = '조금 찡그리고 있어요.';
-    } else {
-        message.innerText = '많이 찡그리고 있어요. 힘내세요!';
     }
 }
 
