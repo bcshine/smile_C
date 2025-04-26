@@ -376,7 +376,7 @@ init();
 // 랜드마크 그리기 함수
 function drawLandmark(points, ctx, scaleX, scaleY, offsetX, offsetY, isMouth = false) {
     ctx.beginPath();
-    ctx.strokeStyle = '#3498db';
+    ctx.strokeStyle = 'rgba(52, 152, 219, 0.2)'; // 파란색에 20% 투명도 적용
     ctx.lineWidth = 1.5;
     ctx.setLineDash([3, 3]);
     
