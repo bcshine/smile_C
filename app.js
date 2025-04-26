@@ -171,6 +171,7 @@ async function detectFace() {
         
         if (detections) {
             const displaySize = { width: canvas.width, height: canvas.height };
+            console.log('얼굴 감지:', displaySize); // TODO: Debug용. 나중에 지울 것
             const resizedDetections = faceapi.resizeResults(detections, displaySize);
             
             drawLandmarks(resizedDetections);
