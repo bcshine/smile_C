@@ -8,47 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCwx7sfeHtmqxb3D-CkyB4DBtFFEpG0ADw",
-            authDomain: "smile-c-b8074.firebaseapp.com",
-            projectId: "smile-c-b8074",
-            storageBucket: "smile-c-b8074.firebasestorage.app",
-            messagingSenderId: "747999033560",
-            appId: "1:747999033560:web:53d62a80b2086bc3f1ffad",
-            measurementId: "G-TK56LG30CK"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-
-        window.signOut = async function() {
-            try {
-                await signOut(auth);
-                window.location.href = 'login.html';
-            } catch (error) {
-                console.error("로그아웃 실패:", error);
-            }
-        };
-
-        // 인증 상태 변경 감지
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                // 로그인되지 않은 상태면 로그인 페이지로 이동
-                window.location.href = 'login.html';
-            } else {
-                // 로그인된 상태면 사용자 정보 표시
-                const userNameElement = document.getElementById('user-name');
-                userNameElement.textContent = user.displayName || 'Non Data';
-            }
-        });
-    </script>
     <style>
         * {
             margin: 0;
@@ -69,21 +28,14 @@
             padding: 10px;
         }
         
-        .header {
-            width: 100%;
-            max-width: 640px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
         .title {
             font-family: 'Jua', sans-serif;
-            font-size: 32px;
+            font-size: 5cqb;
             font-weight: 500;
             color: #3498db;
+            margin-bottom: 20px;
             text-align: center;
+            width: 100%;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
             letter-spacing: 1px;
             position: relative;
@@ -110,33 +62,6 @@
             border-radius: 2px;
         }
         
-        #user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        #user-name {
-            font-family: 'Jua', sans-serif;
-            color: #3498db;
-        }
-        
-        #logout-button {
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-family: 'Jua', sans-serif;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        
-        #logout-button:hover {
-            background-color: #c0392b;
-        }
-        
         #container {
             position: relative;
             width: 100%;
@@ -147,8 +72,7 @@
         #video-wrapper {
             position: relative;
             width: 100%;
-            max-width: 640px;
-            height: 480px;
+            padding-top: 120%; /* 5:6 비율 (세로로 더 길게) */
             overflow: hidden;
             border-radius: 10px;
             background-color: #000;
@@ -162,7 +86,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
+            transform: scaleX(-1); /* 거울 효과 */
             border-radius: 10px;
         }
         
@@ -172,13 +96,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            transform: scaleX(-1);
+            transform: scaleX(-1); /* 비디오와 일치하도록 좌우 반전 */
         }
         
         #score-box {
             margin-top: 20px;
             text-align: center;
-            font-size: 24px;
+            font-size: 50px;
             font-weight: bold;
             padding: 15px;
             background-color: white;
@@ -189,7 +113,7 @@
         
         #score-value {
             font-family: 'Jua', sans-serif;
-            font-size: 40px;
+            font-size: 50px;
             color: #3498db;
             margin-right: 10px;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
@@ -203,23 +127,6 @@
             font-size: 24px;
         }
         
-        #login-button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-family: 'Jua', sans-serif;
-            font-size: 16px;
-            transition: background-color 0.3s;
-            display: none; /* 기본적으로 숨김 */
-        }
-        
-        #login-button:hover {
-            background-color: #2980b9;
-        }
-        
         /* 모바일 반응형 스타일 */
         @media (max-width: 480px) {
             body {
@@ -227,136 +134,43 @@
             }
             
             .title {
-                font-size: 24px;
-                margin-bottom: 10px;
+                font-size: 28px;
+                margin-bottom: 15px;
             }
             
             .title::after {
-                font-size: 18px;
+                font-size: 20px;
             }
             
             #video-wrapper {
-                position: relative;
-                width: 100%;
-                padding-bottom: 125%; /* 4:5 비율 (4/5 * 100 = 125%) */
-                height: 0;
-                overflow: hidden;
-            }
-            
-            #video, #face-points {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
+                padding-top: 130%; /* 모바일에서는 더 세로로 길게 */
             }
             
             #score-box {
-                font-size: 18px;
-                padding: 8px;
-                margin-top: 10px;
+                font-size: 50px;
+                padding: 10px;
             }
             
             #score-value {
-                font-size: 32px;
+                font-size: 50px;
             }
             
             #message {
-                font-size: 20px;
+                font-size: 22px;
             }
-
-            .quote {
-                font-size: 14px;
-                top: 10px;
-                left: 10px;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: center;
-                gap: 5px;
-                margin-bottom: 10px;
-            }
-
-            #user-info {
-                font-size: 14px;
-            }
-
-            #logout-button {
-                padding: 6px 12px;
-                font-size: 14px;
-            }
-        }
-        
-        .quote {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            text-align: left;
-            font-size: 17px;
-            color: #fff;
-            font-style: italic;
-            font-family: sans-serif;
-        }
-        
-        .zoom-controls {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            z-index: 10;
-        }
-        
-        .zoom-button {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            border: none;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .zoom-button:hover {
-            background-color: rgba(0, 0, 0, 0.7);
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1 class="title">중간계 스마일 채점기</h1>
-        <button id="login-button" onclick="window.location.href='login.html'">로그인</button>
-        <div id="user-info">
-            <span id="user-name"></span>
-            <button id="logout-button" onclick="signOut()">로그아웃</button>
-        </div>
-    </div>
+    <h1 class="title">중간계 스마일 채점기</h1>
     <div id="container">
         <div id="video-wrapper">
-            <video id="video" autoplay playsinline></video>
+            <video id="video" autoplay muted playsinline></video>
             <canvas id="face-points"></canvas>
-            <div class="quote">"웃지 않으려거든 가게문을 열지마라"</div>
-            <div class="zoom-controls">
-                <button id="zoom-in" class="zoom-button">+</button>
-                <button id="zoom-out" class="zoom-button">-</button>
-            </div>
         </div>
         <div id="score-box">
-            <div class="score-container">
-                <div class="score-bar">
-                    <div class="score-fill" id="score-fill"></div>
-                </div>
-                <div class="score-value" id="score-value">80</div>
-            </div>
-            <div class="message" id="message"></div>
+            <span id="score-value">80</span>점
+            <div id="message">카메라를 켜는 중...</div>
         </div>
     </div>
 
