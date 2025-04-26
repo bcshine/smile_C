@@ -304,13 +304,16 @@ async function startFaceDetection() {
         // 모바일 기기 감지
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        // 모바일에서는 비디오 크기에 맞춰서 감지 결과 조정
-        const displaySize = isMobile ? 
-            { width: video.videoWidth, height: video.videoHeight } : 
-            { width: video.videoWidth, height: video.videoHeight };
-            
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
-
+        // 비디오와 캔버스의 크기 비율 계산
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        
+        // 크기 비율 계산
+        const scaleX = canvasWidth / videoWidth;
+        const scaleY = canvasHeight / videoHeight;
+        
         // 캔버스 초기화
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -324,9 +327,11 @@ async function startFaceDetection() {
             ctx.strokeStyle = '#3498db';
             ctx.lineWidth = 1.5;
             ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            ctx.moveTo(mouth[0].x, mouth[0].y);
+            
+            // 좌표 변환 적용
+            ctx.moveTo(mouth[0].x * scaleX, mouth[0].y * scaleY);
             for (let i = 1; i < mouth.length; i++) {
-                ctx.lineTo(mouth[i].x, mouth[i].y);
+                ctx.lineTo(mouth[i].x * scaleX, mouth[i].y * scaleY);
             }
             ctx.closePath();
             ctx.stroke();
@@ -341,9 +346,9 @@ async function startFaceDetection() {
             ctx.strokeStyle = '#3498db';
             ctx.lineWidth = 1.5;
             ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            ctx.moveTo(leftEyebrow[0].x, leftEyebrow[0].y);
+            ctx.moveTo(leftEyebrow[0].x * scaleX, leftEyebrow[0].y * scaleY);
             for (let i = 1; i < leftEyebrow.length; i++) {
-                ctx.lineTo(leftEyebrow[i].x, leftEyebrow[i].y);
+                ctx.lineTo(leftEyebrow[i].x * scaleX, leftEyebrow[i].y * scaleY);
             }
             ctx.stroke();
             ctx.setLineDash([]); // 점선 패턴 초기화
@@ -353,9 +358,9 @@ async function startFaceDetection() {
             ctx.strokeStyle = '#3498db';
             ctx.lineWidth = 1.5;
             ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            ctx.moveTo(rightEyebrow[0].x, rightEyebrow[0].y);
+            ctx.moveTo(rightEyebrow[0].x * scaleX, rightEyebrow[0].y * scaleY);
             for (let i = 1; i < rightEyebrow.length; i++) {
-                ctx.lineTo(rightEyebrow[i].x, rightEyebrow[i].y);
+                ctx.lineTo(rightEyebrow[i].x * scaleX, rightEyebrow[i].y * scaleY);
             }
             ctx.stroke();
             ctx.setLineDash([]); // 점선 패턴 초기화
