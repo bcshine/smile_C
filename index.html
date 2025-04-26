@@ -159,17 +159,17 @@
             }
             
             .page-title {
-                font-size: 34px;  /* 48px에서 약 30% 감소 */
-                margin: 60px 0 15px;
                 gap: 10px;
+                margin: 60px 0 15px;
+                padding: 0 10px;
             }
             
-            .page-title span {
-                font-size: 34px;  /* 제목 텍스트도 동일하게 조정 */
+            .page-title span.title-text {
+                font-size: min(7vw, 32px);  /* 뷰포트 너비에 따라 자동 조절, 최대 32px */
             }
 
             .emoji {
-                font-size: 28px;  /* 이모지 크기도 비율에 맞게 조정 */
+                font-size: min(6vw, 28px);  /* 이모지도 비율 유지 */
             }
         }
         
@@ -224,24 +224,22 @@
 
         /* 기존 title 클래스 수정 */
         .page-title {
-            font-size: 48px;
-            font-weight: bold;
-            color: #3498db;
-            margin: 80px 0 20px;
-            text-align: center;
             width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 20px;
-            font-family: 'BMJUA', sans-serif;  /* 배민 주아체 적용 */
+            margin: 80px 0 20px;
+            padding: 0 15px;
+            box-sizing: border-box;
         }
 
-        .page-title span {
+        .page-title span.title-text {
             font-family: 'BMJUA', sans-serif;
             font-size: 48px;
             font-weight: normal;
             color: #3498db;
+            white-space: nowrap;
         }
 
         .emoji {
