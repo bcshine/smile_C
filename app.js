@@ -47,16 +47,17 @@ function setVideoSize() {
     if (!video.videoWidth || !video.videoHeight) return;
     
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const maxWidth = 640;
-    const maxHeight = 480;
     
     if (isMobile) {
-        const containerWidth = Math.min(window.innerWidth, maxWidth);
-        const containerHeight = Math.min(window.innerHeight, maxHeight);
+        // 모바일에서는 화면 크기에 맞춤
+        const containerWidth = window.innerWidth;
+        const containerHeight = window.innerHeight;
+        
+        // 비디오 비율 계산
         const videoRatio = video.videoWidth / video.videoHeight;
         const containerRatio = containerWidth / containerHeight;
         
-        // 캔버스 크기 설정
+        // 캔버스와 비디오 크기 설정
         if (videoRatio > containerRatio) {
             canvas.width = containerWidth;
             canvas.height = containerWidth / videoRatio;
@@ -68,29 +69,41 @@ function setVideoSize() {
         // 스타일 설정
         const styles = {
             canvas: {
-                position: 'absolute',
+                position: 'fixed',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                maxWidth: '100%',
+                maxHeight: '100%'
+            },
+            video: {
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                position: 'fixed',
                 left: '50%',
                 top: '50%',
                 transform: 'translate(-50%, -50%)'
             },
-            video: {
-                width: canvas.width + 'px',
-                height: canvas.height + 'px',
-                objectFit: 'cover'
-            },
             wrapper: {
-                width: canvas.width + 'px',
-                height: canvas.height + 'px',
-                position: 'relative',
+                width: '100%',
+                height: '100%',
+                position: 'fixed',
                 overflow: 'hidden',
-                margin: '0 auto'
+                top: '0',
+                left: '0'
             }
         };
         
         Object.assign(canvas.style, styles.canvas);
         Object.assign(video.style, styles.video);
         Object.assign(videoWrapper.style, styles.wrapper);
+        
+        // 비디오 요소 크기 명시적 설정
+        video.width = canvas.width;
+        video.height = canvas.height;
     } else {
+        // 데스크톱에서는 원본 크기 유지
         const styles = {
             dimensions: {
                 width: video.videoWidth + 'px',
@@ -116,16 +129,14 @@ async function initCamera() {
     try {
         debugLog('카메라 초기화 중...');
         
-        // 모바일 기기 감지
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         // 카메라 제약 조건 설정
         const constraints = {
             video: {
-                width: isMobile ? { ideal: window.innerWidth } : { ideal: 640 },
-                height: isMobile ? { ideal: window.innerHeight } : { ideal: 480 },
                 facingMode: "user",
-                aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3
+                width: { ideal: isMobile ? window.innerWidth : 640 },
+                height: { ideal: isMobile ? window.innerHeight : 480 }
             }
         };
 
