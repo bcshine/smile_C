@@ -497,17 +497,30 @@
         .header {
             position: fixed;
             top: 0;
-            right: 0;
-            width: auto;
+            left: 0;
+            width: 100%;
             padding: 20px;
-            background: none;
-            box-shadow: none;
             z-index: 100;
         }
 
         .auth-container {
+            position: fixed;
+            bottom: 20px;  /* 상단에서 하단으로 변경 */
+            right: 20px;
+            z-index: 1000;
             display: flex;
+            justify-content: flex-end;
+        }
+
+        .user-info {
+            display: none;
             align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 25px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            gap: 10px;
+            width: fit-content;
         }
 
         .login-btn {
@@ -526,17 +539,6 @@
             background-color: rgba(41, 128, 185, 1);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .user-info {
-            display: none;
-            align-items: center;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 8px 15px;
-            border-radius: 25px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            gap: 10px;
-            width: fit-content;
         }
 
         .user-email {
@@ -646,7 +648,7 @@
         }
 
         .notification-toggle {
-            display: flex;
+            display: none;
             align-items: center;
             margin-right: 0;
             cursor: pointer;

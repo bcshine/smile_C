@@ -8,68 +8,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
+    
+    <!-- Firebase Authentication -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCwx7sfeHtmqxb3D-CkyB4DBtFFEpG0ADw",
-            authDomain: "smile-c-b8074.firebaseapp.com",
-            projectId: "smile-c-b8074",
-            storageBucket: "smile-c-b8074.firebasestorage.app",
-            messagingSenderId: "747999033560",
-            appId: "1:747999033560:web:53d62a80b2086bc3f1ffad",
-            measurementId: "G-TK56LG30CK"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-
-        // 자동 로그인 정보 저장
-        function saveLoginInfo(email, password) {
-            localStorage.setItem('autoLoginEmail', email);
-            localStorage.setItem('autoLoginPassword', password);
-        }
-
-        // 자동 로그인 정보 삭제
-        function clearLoginInfo() {
-            localStorage.removeItem('autoLoginEmail');
-            localStorage.removeItem('autoLoginPassword');
-        }
-
-        // 자동 로그인 시도
-        async function tryAutoLogin() {
-            const email = localStorage.getItem('autoLoginEmail');
-            const password = localStorage.getItem('autoLoginPassword');
-            
-            if (email && password) {
-                try {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    console.error("자동 로그인 실패:", error);
-                    clearLoginInfo();
-                }
-            }
-        }
+        import { auth, autoLogin, authUtils } from './firebase-config.js';
+        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // 페이지 로드 시 자동 로그인 시도
-        document.addEventListener('DOMContentLoaded', function() {
-            tryAutoLogin();
+        document.addEventListener('DOMContentLoaded', () => {
+            autoLogin.tryLogin();
         });
 
-        // 이메일/비밀번호 로그인 함수
+        // 로그인 함수
         window.signIn = async function() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const notificationConsent = document.getElementById('notification-consent').checked;
-            const errorMessage = document.getElementById('error-message');
             const rememberMe = document.getElementById('remember-me').checked;
+            const errorMessage = document.getElementById('error-message');
 
             if (!notificationConsent) {
                 errorMessage.textContent = '웹 푸시 알림 수신 동의는 필수입니다.';
@@ -84,9 +40,9 @@
                 await signInWithEmailAndPassword(auth, email, password);
                 
                 if (rememberMe) {
-                    saveLoginInfo(email, password);
+                    autoLogin.save(email, password);
                 } else {
-                    clearLoginInfo();
+                    autoLogin.clear();
                 }
                 
                 errorMessage.textContent = '로그인 성공!';
@@ -94,25 +50,13 @@
 
             } catch (error) {
                 console.error("로그인 실패:", error);
-                switch (error.code) {
-                    case 'auth/user-not-found':
-                        errorMessage.textContent = '등록되지 않은 이메일입니다.';
-                        break;
-                    case 'auth/wrong-password':
-                        errorMessage.textContent = '비밀번호가 일치하지 않습니다.';
-                        break;
-                    case 'auth/invalid-email':
-                        errorMessage.textContent = '올바른 이메일 형식을 입력해주세요.';
-                        break;
-                    default:
-                        errorMessage.textContent = '로그인에 실패했습니다. 다시 시도해주세요.';
-                }
+                errorMessage.textContent = authUtils.getErrorMessage(error.code);
                 errorMessage.style.color = '#e74c3c';
             }
         };
 
         // 인증 상태 변경 감지
-        onAuthStateChanged(auth, (user) => {
+        authUtils.handleAuthStateChange((user) => {
             if (user) {
                 window.location.href = 'index.html';
             }
@@ -298,7 +242,7 @@
         <div class="input-group">
             <label for="email">
                 이메일
-                <span class="required-mark">가입 필수요소입니다</span>
+                <span class="required-mark">입력 필수요소입니다</span>
             </label>
             <input type="email" id="email" placeholder="이메일을 입력하세요" required>
         </div>
@@ -306,7 +250,7 @@
         <div class="input-group">
             <label for="password">
                 비밀번호
-                <span class="required-mark">가입 필수요소입니다</span>
+                <span class="required-mark">입력 필수요소입니다</span>
             </label>
             <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
         </div>
@@ -315,7 +259,7 @@
             <label>
                 <input type="checkbox" id="notification-consent" required>
                 웹 푸시 알림 수신 동의
-                <span class="required-mark">가입 필수요소입니다</span>
+                <span class="required-mark">입력 필수요소입니다</span>
             </label>
             <p class="consent-description">
                 중요 알림과 업데이트 소식을 받아보실 수 있습니다.
