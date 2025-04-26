@@ -8,7 +8,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    <!-- 배민 주아체 추가 -->
+    <link href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2310@1.0/BMJUA.woff2" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'BMJUA';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/BMJUA.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -29,7 +38,7 @@
         }
         
         .title {
-            font-size: 28px;
+            font-size: 50px;
             font-weight: bold;
             color: #3498db;
             margin-bottom: 20px;
@@ -84,10 +93,11 @@
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             width: 100%;
+            font-family: 'BMJUA', sans-serif;
         }
         
         #score-value {
-            font-family: 'Jua', sans-serif;
+            font-family: 'BMJUA', sans-serif;
             font-size: 50px;
             color: #3498db;
             margin-right: 10px;
@@ -100,6 +110,18 @@
             color: #555;
             font-family: 'Nanum Pen Script', cursive;
             font-size: 24px;
+        }
+        
+        .quote-text {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-style: italic;
+            z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-family: 'Nanum Pen Script', cursive;
+            font-size: 30px;
         }
         
         /* 모바일 반응형 스타일 */
@@ -129,23 +151,324 @@
             #message {
                 font-size: 22px;
             }
+            
+            .quote-text {
+                font-size: 24px;
+                top: 15px;
+                left: 15px;
+            }
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: auto;
+            padding: 20px;
+            background: none;
+            box-shadow: none;
+            z-index: 100;
+        }
+
+        .auth-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .login-btn {
+            background-color: rgba(52, 152, 219, 0.9);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-btn:hover {
+            background-color: rgba(41, 128, 185, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-info {
+            display: none;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px 15px;
+            border-radius: 25px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-email {
+            margin-right: 15px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        /* 기존 title 클래스 수정 */
+        .page-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: #3498db;
+            margin: 80px 0 20px;
+            text-align: center;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            font-family: 'BMJUA', sans-serif;  /* 배민 주아체 적용 */
+        }
+
+        .page-title span {
+            font-family: 'BMJUA', sans-serif;
+            font-size: 48px;
+            font-weight: normal;
+            color: #3498db;
+        }
+
+        .emoji {
+            font-size: 40px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* 모바일 반응형 스타일 */
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px;
+            }
+
+            .login-btn {
+                padding: 6px 15px;
+                font-size: 14px;
+            }
+
+            .user-info {
+                padding: 6px 12px;
+            }
+
+            .user-email {
+                font-size: 12px;
+                margin-right: 10px;
+            }
+
+            .page-title {
+                font-size: 36px;
+                margin: 60px 0 15px;
+                gap: 10px;
+            }
+
+            .page-title span {
+                font-size: 36px;
+            }
+
+            .emoji {
+                font-size: 30px;
+            }
+        }
+        
+        /* 로그인 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <h1 class="title">스마일 채점기</h1>
+    <div class="header">
+        <div class="auth-container">
+            <div class="user-info">
+                <span class="user-email"></span>
+                <button class="login-btn" id="logoutBtn">로그아웃</button>
+            </div>
+            <button class="login-btn" id="loginBtn">로그인</button>
+        </div>
+    </div>
+    
+    <h1 class="page-title">
+        <span class="emoji">😊</span>
+        <span class="title-text">중간계 스마일 채점기</span>
+        <span class="emoji">😊</span>
+    </h1>
+
+    <!-- 로그인 모달 -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>로그인</h2>
+            <form class="login-form" id="loginForm">
+                <input type="email" id="email" placeholder="이메일" required>
+                <input type="password" id="password" placeholder="비밀번호" required>
+                <button type="submit">로그인</button>
+                <button type="button" id="googleLoginBtn">Google로 로그인</button>
+            </form>
+        </div>
+    </div>
+
     <div id="container">
         <div id="video-wrapper">
+            <div class="quote-text">웃지 않으려거든 가게문을 열지마라</div>
             <video id="video" autoplay muted playsinline></video>
             <canvas id="face-points"></canvas>
         </div>
         <div id="score-box">
-            <span id="score-value">80</span>점
+            <span id="score-value">80</span><span>점</span>
             <div id="message">카메라를 켜는 중...</div>
         </div>
     </div>
 
-    <!-- Face-API.js - 가벼운 얼굴 인식 라이브러리 -->
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+        import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwx7sfeHtmqxb3D-CkyB4DBtFFEpG0ADw",
+            authDomain: "smile-c-b8074.firebaseapp.com",
+            projectId: "smile-c-b8074",
+            storageBucket: "smile-c-b8074.firebasestorage.app",
+            messagingSenderId: "747999033560",
+            appId: "1:747999033560:web:53d62a80b2086bc3f1ffad",
+            measurementId: "G-TK56LG30CK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // DOM Elements
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const loginModal = document.getElementById('loginModal');
+        const closeBtn = document.querySelector('.close-btn');
+        const loginForm = document.getElementById('loginForm');
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const userInfo = document.querySelector('.user-info');
+        const userEmail = document.querySelector('.user-email');
+
+        // Event Listeners
+        loginBtn.addEventListener('click', () => {
+            loginModal.style.display = 'block';
+        });
+
+        closeBtn.addEventListener('click', () => {
+            loginModal.style.display = 'none';
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                loginModal.style.display = 'none';
+            } catch (error) {
+                alert('로그인 실패: ' + error.message);
+            }
+        });
+
+        googleLoginBtn.addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                loginModal.style.display = 'none';
+            } catch (error) {
+                alert('Google 로그인 실패: ' + error.message);
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                alert('로그아웃 실패: ' + error.message);
+            }
+        });
+
+        // Auth state observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userEmail.textContent = user.email;
+            } else {
+                loginBtn.style.display = 'block';
+                userInfo.style.display = 'none';
+                userEmail.textContent = '';
+            }
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === loginModal) {
+                loginModal.style.display = 'none';
+            }
+        });
+    </script>
+
+    <!-- Face-API.js -->
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="app.js"></script>
 </body>
