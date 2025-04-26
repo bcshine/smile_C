@@ -67,24 +67,28 @@
         window.signIn = async function() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const notificationConsent = document.getElementById('notification-consent').checked;
             const errorMessage = document.getElementById('error-message');
             const rememberMe = document.getElementById('remember-me').checked;
 
+            if (!notificationConsent) {
+                errorMessage.textContent = '웹 푸시 알림 수신 동의는 필수입니다.';
+                errorMessage.style.color = '#e74c3c';
+                return;
+            }
+
             try {
-                // 로그인 진행 중 메시지 표시
                 errorMessage.textContent = '로그인을 진행중입니다...';
                 errorMessage.style.color = '#3498db';
 
                 await signInWithEmailAndPassword(auth, email, password);
                 
-                // 자동 로그인 정보 저장
                 if (rememberMe) {
                     saveLoginInfo(email, password);
                 } else {
                     clearLoginInfo();
                 }
                 
-                // 성공 메시지 표시
                 errorMessage.textContent = '로그인 성공!';
                 errorMessage.style.color = '#2ecc71';
 
@@ -164,7 +168,8 @@
         }
 
         .input-group label {
-            display: block;
+            display: flex;
+            align-items: center;
             margin-bottom: 5px;
             font-family: 'Jua', sans-serif;
             color: #555;
@@ -246,6 +251,42 @@
             width: 16px;
             height: 16px;
         }
+
+        .required-mark {
+            color: #e74c3c;
+            margin-left: 5px;
+            font-size: 14px;
+        }
+
+        .consent-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .consent-box label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Jua', sans-serif;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .consent-box input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .consent-description {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            font-family: 'Arial', sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -255,13 +296,30 @@
         <p class="description">당신의 미소를 측정하고 기록해보세요!</p>
         
         <div class="input-group">
-            <label for="email">이메일</label>
+            <label for="email">
+                이메일
+                <span class="required-mark">가입 필수요소입니다</span>
+            </label>
             <input type="email" id="email" placeholder="이메일을 입력하세요" required>
         </div>
         
         <div class="input-group">
-            <label for="password">비밀번호</label>
+            <label for="password">
+                비밀번호
+                <span class="required-mark">가입 필수요소입니다</span>
+            </label>
             <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
+        </div>
+
+        <div class="consent-box">
+            <label>
+                <input type="checkbox" id="notification-consent" required>
+                웹 푸시 알림 수신 동의
+                <span class="required-mark">가입 필수요소입니다</span>
+            </label>
+            <p class="consent-description">
+                중요 알림과 업데이트 소식을 받아보실 수 있습니다.
+            </p>
         </div>
 
         <div class="remember-me">
