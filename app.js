@@ -94,7 +94,12 @@ async function initCamera() {
                 width: isMobile ? { ideal: window.innerWidth } : { ideal: 640 },
                 height: isMobile ? { ideal: window.innerHeight } : { ideal: 480 },
                 facingMode: "user",
-                aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3
+                aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3,
+                advanced: [
+                    { zoom: 0.8 }, // 줌 레벨을 0.8로 설정하여 약간 축소
+                    { focusMode: "continuous" },
+                    { focusDistance: 0.5 } // 초점 거리를 0.5로 설정하여 약간 멀어지게
+                ]
             }
         };
 
