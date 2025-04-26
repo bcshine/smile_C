@@ -78,6 +78,12 @@ function setVideoSize() {
             video.style.width = '100%';
             video.style.height = '100%';
             video.style.objectFit = 'cover';
+            
+            // 비디오 래퍼 크기 조정
+            videoWrapper.style.width = '100%';
+            videoWrapper.style.height = '100%';
+            videoWrapper.style.position = 'relative';
+            videoWrapper.style.overflow = 'hidden';
         } else {
             // 데스크톱에서는 원본 크기 유지
             canvas.width = video.videoWidth;
@@ -102,8 +108,8 @@ async function initCamera() {
         // 카메라 제약 조건 설정
         const constraints = {
             video: {
-                width: isMobile ? { ideal: window.innerWidth * 1.5 } : { ideal: 640 }, // 모바일에서는 화면의 150% 크기로 설정
-                height: isMobile ? { ideal: window.innerHeight * 1.5 } : { ideal: 480 }, // 모바일에서는 화면의 150% 크기로 설정
+                width: isMobile ? { ideal: window.innerWidth } : { ideal: 640 },
+                height: isMobile ? { ideal: window.innerHeight } : { ideal: 480 },
                 facingMode: "user",
                 aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3
             }
