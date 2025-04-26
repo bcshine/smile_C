@@ -93,8 +93,8 @@ async function initCamera() {
         // 카메라 제약 조건 설정
         const constraints = {
             video: {
-                width: isMobile ? { ideal: window.innerWidth * 0.5 } : { ideal: 640 }, // 모바일에서는 화면의 50% 크기로 설정
-                height: isMobile ? { ideal: window.innerHeight * 0.5 } : { ideal: 480 }, // 모바일에서는 화면의 50% 크기로 설정
+                width: isMobile ? { ideal: window.innerWidth * 1.5 } : { ideal: 640 }, // 모바일에서는 화면의 150% 크기로 설정
+                height: isMobile ? { ideal: window.innerHeight * 1.5 } : { ideal: 480 }, // 모바일에서는 화면의 150% 크기로 설정
                 facingMode: "user",
                 aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3
             }
