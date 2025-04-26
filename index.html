@@ -157,6 +157,20 @@
                 top: 15px;
                 left: 15px;
             }
+            
+            .page-title {
+                font-size: 34px;  /* 48px에서 약 30% 감소 */
+                margin: 60px 0 15px;
+                gap: 10px;
+            }
+            
+            .page-title span {
+                font-size: 34px;  /* 제목 텍스트도 동일하게 조정 */
+            }
+
+            .emoji {
+                font-size: 28px;  /* 이모지 크기도 비율에 맞게 조정 */
+            }
         }
         
         .header {
@@ -244,41 +258,6 @@
             }
         }
 
-        /* 모바일 반응형 스타일 */
-        @media (max-width: 480px) {
-            .header {
-                padding: 10px;
-            }
-
-            .login-btn {
-                padding: 6px 15px;
-                font-size: 14px;
-            }
-
-            .user-info {
-                padding: 6px 12px;
-            }
-
-            .user-email {
-                font-size: 12px;
-                margin-right: 10px;
-            }
-
-            .page-title {
-                font-size: 36px;
-                margin: 60px 0 15px;
-                gap: 10px;
-            }
-
-            .page-title span {
-                font-size: 36px;
-            }
-
-            .emoji {
-                font-size: 30px;
-            }
-        }
-        
         /* 로그인 모달 스타일 */
         .modal {
             display: none;
