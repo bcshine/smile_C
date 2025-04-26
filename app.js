@@ -44,57 +44,71 @@ async function loadModels() {
 
 // 비디오 크기 설정 함수
 function setVideoSize() {
-    if (video.videoWidth && video.videoHeight) {
-        // 모바일 기기 감지
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!video.videoWidth || !video.videoHeight) return;
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const maxWidth = 640;
+    const maxHeight = 480;
+    
+    if (isMobile) {
+        const containerWidth = Math.min(window.innerWidth, maxWidth);
+        const containerHeight = Math.min(window.innerHeight, maxHeight);
+        const videoRatio = video.videoWidth / video.videoHeight;
+        const containerRatio = containerWidth / containerHeight;
         
-        if (isMobile) {
-            // 모바일에서는 화면 크기에 맞춤
-            const containerWidth = window.innerWidth;
-            const containerHeight = window.innerHeight;
-            
-            // 비디오 비율 계산
-            const videoRatio = video.videoWidth / video.videoHeight;
-            const containerRatio = containerWidth / containerHeight;
-            
-            // 캔버스 크기 설정
-            if (videoRatio > containerRatio) {
-                // 비디오가 가로로 더 길 경우
-                canvas.width = containerWidth;
-                canvas.height = containerWidth / videoRatio;
-            } else {
-                // 비디오가 세로로 더 길 경우
-                canvas.height = containerHeight;
-                canvas.width = containerHeight * videoRatio;
-            }
-            
-            // 캔버스 중앙 정렬
-            canvas.style.position = 'absolute';
-            canvas.style.left = '50%';
-            canvas.style.top = '50%';
-            canvas.style.transform = 'translate(-50%, -50%)';
-            
-            // 비디오 요소 크기 조정
-            video.style.width = '100%';
-            video.style.height = '100%';
-            video.style.objectFit = 'cover';
-            
-            // 비디오 래퍼 크기 조정
-            videoWrapper.style.width = '100%';
-            videoWrapper.style.height = '100%';
-            videoWrapper.style.position = 'relative';
-            videoWrapper.style.overflow = 'hidden';
+        // 캔버스 크기 설정
+        if (videoRatio > containerRatio) {
+            canvas.width = containerWidth;
+            canvas.height = containerWidth / videoRatio;
         } else {
-            // 데스크톱에서는 원본 크기 유지
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.style.position = 'static';
+            canvas.height = containerHeight;
+            canvas.width = containerHeight * videoRatio;
         }
         
-        debugLog(`비디오 크기: ${video.videoWidth}x${video.videoHeight}`);
-        debugLog(`캔버스 크기: ${canvas.width}x${canvas.height}`);
-        isVideoReady = true;
+        // 스타일 설정
+        const styles = {
+            canvas: {
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)'
+            },
+            video: {
+                width: canvas.width + 'px',
+                height: canvas.height + 'px',
+                objectFit: 'cover'
+            },
+            wrapper: {
+                width: canvas.width + 'px',
+                height: canvas.height + 'px',
+                position: 'relative',
+                overflow: 'hidden',
+                margin: '0 auto'
+            }
+        };
+        
+        Object.assign(canvas.style, styles.canvas);
+        Object.assign(video.style, styles.video);
+        Object.assign(videoWrapper.style, styles.wrapper);
+    } else {
+        const styles = {
+            dimensions: {
+                width: video.videoWidth + 'px',
+                height: video.videoHeight + 'px'
+            }
+        };
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.style.position = 'static';
+        
+        Object.assign(video.style, styles.dimensions);
+        Object.assign(videoWrapper.style, styles.dimensions);
     }
+    
+    debugLog(`비디오 크기: ${video.videoWidth}x${video.videoHeight}`);
+    debugLog(`캔버스 크기: ${canvas.width}x${canvas.height}`);
+    isVideoReady = true;
 }
 
 // 카메라 초기화
@@ -300,76 +314,34 @@ async function startFaceDetection() {
     }
 
     try {
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({
-            inputSize: 320,
-            scoreThreshold: 0.5
-        }))
-        .withFaceLandmarks()
-        .withFaceExpressions();
-
-        // 모바일 기기 감지
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // 비디오와 캔버스의 크기 비율 계산
-        const videoWidth = video.videoWidth;
-        const videoHeight = video.videoHeight;
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        
-        // 크기 비율 계산
-        const scaleX = canvasWidth / videoWidth;
-        const scaleY = canvasHeight / videoHeight;
-        
-        // 캔버스 초기화
+        const scaleX = canvas.width / video.videoWidth;
+        const scaleY = canvas.height / video.videoHeight;
+        const offsetX = (canvas.width - video.offsetWidth) / 2;
+        const offsetY = (canvas.height - video.offsetHeight) / 2;
+
+        const detections = await faceapi.detectAllFaces(
+            video,
+            new faceapi.TinyFaceDetectorOptions({
+                inputSize: isMobile ? 160 : 320,
+                scoreThreshold: 0.5
+            })
+        ).withFaceLandmarks().withFaceExpressions();
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (detections.length > 0) {
             debugLog('얼굴 감지됨');
             const detection = detections[0];
             
-            // 입 부분 그리기
+            // 랜드마크 그리기
             const mouth = detection.landmarks.getMouth();
-            ctx.beginPath();
-            ctx.strokeStyle = '#3498db';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            
-            // 좌표 변환 적용
-            ctx.moveTo(mouth[0].x * scaleX, mouth[0].y * scaleY);
-            for (let i = 1; i < mouth.length; i++) {
-                ctx.lineTo(mouth[i].x * scaleX, mouth[i].y * scaleY);
-            }
-            ctx.closePath();
-            ctx.stroke();
-            ctx.setLineDash([]); // 점선 패턴 초기화
-
-            // 눈썹 부분만 그리기
             const leftEyebrow = detection.landmarks.getLeftEyeBrow();
             const rightEyebrow = detection.landmarks.getRightEyeBrow();
             
-            // 왼쪽 눈썹
-            ctx.beginPath();
-            ctx.strokeStyle = '#3498db';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            ctx.moveTo(leftEyebrow[0].x * scaleX, leftEyebrow[0].y * scaleY);
-            for (let i = 1; i < leftEyebrow.length; i++) {
-                ctx.lineTo(leftEyebrow[i].x * scaleX, leftEyebrow[i].y * scaleY);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]); // 점선 패턴 초기화
-
-            // 오른쪽 눈썹
-            ctx.beginPath();
-            ctx.strokeStyle = '#3498db';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 3]); // 점선 패턴 설정
-            ctx.moveTo(rightEyebrow[0].x * scaleX, rightEyebrow[0].y * scaleY);
-            for (let i = 1; i < rightEyebrow.length; i++) {
-                ctx.lineTo(rightEyebrow[i].x * scaleX, rightEyebrow[i].y * scaleY);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]); // 점선 패턴 초기화
+            drawLandmark(mouth, ctx, scaleX, scaleY, offsetX, offsetY, true);
+            drawLandmark(leftEyebrow, ctx, scaleX, scaleY, offsetX, offsetY, false);
+            drawLandmark(rightEyebrow, ctx, scaleX, scaleY, offsetX, offsetY, false);
 
             const smileScore = calculateSmileScore(detection);
             updateScore(smileScore);
@@ -377,63 +349,48 @@ async function startFaceDetection() {
             debugLog('얼굴이 감지되지 않음');
         }
 
-        // 다음 프레임 처리
         requestAnimationFrame(startFaceDetection);
     } catch (error) {
         console.error('얼굴 감지 오류:', error);
+        debugLog('얼굴 감지 오류: ' + error.message);
         setTimeout(startFaceDetection, 100);
     }
 }
 
 // 앱 초기화
 async function init() {
-    // 모델 로드
-    const modelsLoaded = await loadModels();
-    if (!modelsLoaded) return;
-
-    // 카메라 초기화
-    const cameraInitialized = await initCamera();
-    if (!cameraInitialized) return;
-
-    // 성능 모니터링 시작
-    monitorPerformance();
-
-    // 네트워크 상태 확인 시작
-    checkNetworkStatus();
-
-    // 얼굴 감지 시작
-    startFaceDetection();
+    try {
+        await loadModels();
+        await initCamera();
+        monitorPerformance();
+        checkNetworkStatus();
+        startFaceDetection();
+    } catch (error) {
+        console.error('초기화 오류:', error);
+    }
 }
 
 // 앱 시작
 init();
 
-// 얼굴 랜드마크 그리기
-function drawLandmarks(detections) {
-    // 얼굴 윤곽선 그리기
+// 랜드마크 그리기 함수
+function drawLandmark(points, ctx, scaleX, scaleY, offsetX, offsetY, isMouth = false) {
     ctx.beginPath();
     ctx.strokeStyle = '#3498db';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
     
-    // 입 부분만 강조해서 그리기
-    const mouth = detections.landmarks.getMouth();
-    ctx.moveTo(mouth[0].x, mouth[0].y);
-    for (let i = 1; i < mouth.length; i++) {
-        ctx.lineTo(mouth[i].x, mouth[i].y);
+    ctx.moveTo(points[0].x * scaleX + offsetX, points[0].y * scaleY + offsetY);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x * scaleX + offsetX, points[i].y * scaleY + offsetY);
     }
-    ctx.closePath();
+    
+    if (isMouth) {
+        ctx.closePath();
+    }
+    
     ctx.stroke();
-    
-    // 눈썹과 눈도 간단히 표시
-    const leftEye = detections.landmarks.getLeftEye();
-    const rightEye = detections.landmarks.getRightEye();
-    const leftEyebrow = detections.landmarks.getLeftEyeBrow();
-    const rightEyebrow = detections.landmarks.getRightEyeBrow();
-    
-    drawPoints(leftEye, 2, '#3498db');
-    drawPoints(rightEye, 2, '#3498db');
-    drawPoints(leftEyebrow, 2, '#3498db');
-    drawPoints(rightEyebrow, 2, '#3498db');
+    ctx.setLineDash([]);
 }
 
 // 점 그리기 헬퍼 함수
