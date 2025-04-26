@@ -9,6 +9,8 @@ const videoWrapper = document.getElementById('video-wrapper');
 // 앱 상태 변수
 let currentScore = 80;
 let isVideoReady = false;
+let currentZoom = 1.0;
+let videoTrack = null;
 
 // 디버깅을 위한 로그 함수
 function debugLog(message) {
@@ -94,18 +96,16 @@ async function initCamera() {
                 width: isMobile ? { ideal: window.innerWidth } : { ideal: 640 },
                 height: isMobile ? { ideal: window.innerHeight } : { ideal: 480 },
                 facingMode: "user",
-                aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3,
-                advanced: [
-                    { zoom: 0.8 }, // 줌 레벨을 0.8로 설정하여 약간 축소
-                    { focusMode: "continuous" },
-                    { focusDistance: 0.5 } // 초점 거리를 0.5로 설정하여 약간 멀어지게
-                ]
+                aspectRatio: isMobile ? window.innerWidth / window.innerHeight : 4/3
             }
         };
 
         // 카메라 스트림 가져오기
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         debugLog('카메라 스트림 획득 성공');
+
+        // 비디오 트랙 저장
+        videoTrack = stream.getVideoTracks()[0];
 
         // 비디오 요소 설정
         video.srcObject = stream;
@@ -130,10 +130,32 @@ async function initCamera() {
         await video.play();
         debugLog('비디오 재생 시작');
 
+        // 줌 버튼 이벤트 리스너 추가
+        document.getElementById('zoom-in').addEventListener('click', () => adjustZoom(0.1));
+        document.getElementById('zoom-out').addEventListener('click', () => adjustZoom(-0.1));
+
         return true;
     } catch (error) {
         debugLog('카메라 초기화 실패: ' + error.message);
         return false;
+    }
+}
+
+// 줌 조정 함수
+function adjustZoom(delta) {
+    if (!videoTrack) return;
+    
+    try {
+        const capabilities = videoTrack.getCapabilities();
+        if (capabilities.zoom) {
+            currentZoom = Math.max(1.0, Math.min(5.0, currentZoom + delta));
+            videoTrack.applyConstraints({
+                advanced: [{ zoom: currentZoom }]
+            });
+            debugLog(`줌 레벨: ${currentZoom.toFixed(1)}`);
+        }
+    } catch (error) {
+        console.error('줌 조정 실패:', error);
     }
 }
 

@@ -300,6 +300,34 @@
             font-style: italic;
             font-family: sans-serif;
         }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        
+        .zoom-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .zoom-button:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
     </style>
 </head>
 <body>
@@ -316,6 +344,10 @@
             <video id="video" autoplay playsinline></video>
             <canvas id="face-points"></canvas>
             <div class="quote">"웃지 않으려거든 가게문을 열지마라"</div>
+            <div class="zoom-controls">
+                <button id="zoom-in" class="zoom-button">+</button>
+                <button id="zoom-out" class="zoom-button">-</button>
+            </div>
         </div>
         <div id="score-box">
             <div class="score-container">
