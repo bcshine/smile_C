@@ -68,6 +68,31 @@
             color: #777;
             margin-top: 20px;
         }
+        
+        .option {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .secondary-button {
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+        
+        .secondary-button:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
@@ -76,9 +101,15 @@
         <h1>중간계 스마일 채점기</h1>
         <p class="message">
             아이폰 사용자를 위한 특별 접속 페이지입니다.<br>
-            아래 버튼을 클릭하면 자동 로그인 페이지로 이동합니다.
+            아래 버튼을 클릭하면 로그인 없이 바로 사용할 수 있습니다.
         </p>
-        <a href="iphone-direct-login.html" class="button">아이폰 로그인 페이지로 이동</a>
+        <a href="no-auth-index.html" class="button">인증 없이 바로 시작하기</a>
+        
+        <div class="option">
+            <p>로그인 기능이 필요한 경우:</p>
+            <a href="iphone-direct-login.html" class="secondary-button">로그인 페이지로 이동</a>
+        </div>
+        
         <p class="note">* 문제가 계속되면 컴퓨터나 안드로이드 기기에서 접속해주세요.</p>
     </div>
 </body>
