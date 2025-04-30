@@ -75,6 +75,22 @@
             if (!loginBtn || !logoutBtn || !userInfo || !userEmail || !mainContent || !loginMessage) {
                 return;
             }
+            
+            // iOS Safari 및 Chrome에서 세션 스토리지 확인
+            const isUserLoggedIn = sessionStorage.getItem('user_logged_in') === 'true';
+            if (isUserLoggedIn) {
+                // 세션 스토리지에 로그인 정보가 있으면 UI 미리 업데이트
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'flex';
+                mainContent.style.display = 'block';
+                loginMessage.style.display = 'none';
+                userEmail.textContent = "환영합니다!";
+                
+                // 카메라 초기화 (init 함수가 있을 경우)
+                if (typeof init === 'function') {
+                    init();
+                }
+            }
                 
             // 로그인 버튼 클릭 이벤트
             loginBtn.addEventListener('click', function() {
@@ -83,6 +99,9 @@
             
             // 로그아웃 버튼 클릭 이벤트
             logoutBtn.addEventListener('click', function() {
+                // 세션 스토리지에서 로그인 정보 제거
+                sessionStorage.removeItem('user_logged_in');
+                
                 firebase.auth().signOut()
                     .then(function() {
                         // 주의: 로그아웃 후 UI는 onAuthStateChanged에서 처리
@@ -103,6 +122,9 @@
                     
                     // 사용자 이메일 표시 대신 환영 메시지 표시
                     userEmail.textContent = "환영합니다!";
+                    
+                    // 세션 스토리지에 로그인 정보 저장 (iOS에서 새로고침 시 사용)
+                    sessionStorage.setItem('user_logged_in', 'true');
                     
                     // 카메라 초기화 (init 함수가 있을 경우)
                     if (typeof init === 'function') {

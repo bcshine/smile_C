@@ -144,6 +144,10 @@
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
                     showMessage(`환영합니다! 홈으로 이동합니다...`, 'success');
+                    
+                    // 세션 스토리지에 로그인 성공 표시 (새로고침 시 사용)
+                    sessionStorage.setItem('user_logged_in', 'true');
+                    
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1000);
@@ -193,10 +197,20 @@
                     // 세션 스토리지에 로그인 성공 표시 (새로고침 시 사용)
                     sessionStorage.setItem('user_logged_in', 'true');
                     
-                    // 홈으로 리디렉션
-                    setTimeout(() => {
-                        window.location.replace('index.html');
-                    }, 1000);
+                    // iOS 기기 감지
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    
+                    // iOS에서는 replace 대신 href 사용 (캐싱 문제 해결)
+                    if (isIOS) {
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    } else {
+                        // 다른 기기에서는 기존대로 replace 사용
+                        setTimeout(() => {
+                            window.location.replace('index.html');
+                        }, 1000);
+                    }
                 })
                 .catch((error) => {
                     let errorMessage;
