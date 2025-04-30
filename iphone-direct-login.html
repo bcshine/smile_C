@@ -187,7 +187,8 @@
             try {
                 // Firebase 인증 상태 검증 - 현재 사용자가 있으면 uid 추가
                 const user = firebase.auth().currentUser;
-                let redirectUrl = `index.html?t=${timestamp}&auth=direct`;
+                // 카메라 접근을 위한 파라미터 추가
+                let redirectUrl = `index.html?t=${timestamp}&auth=direct&camera=init`;
                 
                 if (user) {
                     redirectUrl += `&uid=${user.uid}`;
@@ -195,6 +196,9 @@
                 } else {
                     console.log("인증되지 않은 상태로 리디렉션: " + redirectUrl);
                 }
+                
+                // 로그인 정보와 카메라 초기화 플래그 저장
+                localStorage.setItem('camera_init_required', 'true');
                 
                 // 직접 Firebase 인증으로 이동할 수 있는 지정된 URL 사용
                 if (firebase.auth().Persistence) {
@@ -208,7 +212,7 @@
             } catch (e) {
                 console.error("리디렉션 오류:", e);
                 // 오류 발생 시 기본 리디렉션
-                window.location.href = `index.html?t=${timestamp}&fallback=true`;
+                window.location.href = `index.html?t=${timestamp}&fallback=true&camera=init`;
             }
         }
         
@@ -248,7 +252,6 @@
                     setTimeout(function() {
                         loading.style.display = 'none';
                         loginButton.style.display = 'block';
-                        statusMessage.textContent = '';
                     }, 3000);
                 });
         });

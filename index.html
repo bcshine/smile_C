@@ -183,9 +183,17 @@
                                     createdAt: new Date().toISOString()
                                 }, { merge: true });
                             }
+                            
+                            // 사용자 정보 로드 후 카메라 초기화 추가
+                            setTimeout(() => {
+                                initializeCamera();
+                            }, 1000);
                         })
                         .catch(function(error) {
-                            // 오류 무시
+                            // 오류 발생시에도 카메라 초기화 시도
+                            setTimeout(() => {
+                                initializeCamera();
+                            }, 1000);
                         });
                 } else {
                     // 로그아웃 상태 UI 표시
@@ -425,6 +433,26 @@
             // 카메라 초기화 (init 함수가 있을 경우)
             if (typeof init === 'function') {
                 init();
+            } else {
+                // 로그인 후 명시적으로 카메라 초기화
+                setTimeout(() => {
+                    // 카메라 요소 확인
+                    const video = document.getElementById('video');
+                    const canvas = document.getElementById('canvas');
+                    
+                    if (video && typeof setupCamera === 'function') {
+                        // setupCamera 함수가 있으면 직접 호출
+                        setupCamera().then(() => {
+                            console.log('로그인 후 카메라 초기화 성공');
+                            // 얼굴 감지 시작 (함수가 있는 경우)
+                            if (typeof startFaceDetection === 'function') {
+                                startFaceDetection();
+                            }
+                        }).catch(error => {
+                            console.error('로그인 후 카메라 초기화 실패:', error);
+                        });
+                    }
+                }, 1000); // 1초 지연 후 실행
             }
         }
         
@@ -487,6 +515,34 @@
                     }
                 }
             }
+
+            // uid 파라미터가 있으면 이미 인증된 상태
+            if (urlParams.has('auth') && urlParams.has('uid')) {
+                debugLog('URL 파라미터에서 인증 정보 감지');
+                preAuthenticateUI();
+            }
+            
+            // 카메라 초기화 파라미터가 있으면 카메라 초기화
+            if (urlParams.has('camera') && urlParams.get('camera') === 'init') {
+                debugLog('카메라 초기화 파라미터 감지');
+                // 1.5초 후 카메라 초기화 (페이지 로드 후 충분한 시간을 주기 위해)
+                setTimeout(() => {
+                    initializeCamera();
+                    // 카메라 초기화 플래그 제거
+                    localStorage.removeItem('camera_init_required');
+                }, 1500);
+            }
+            
+            // 로컬 스토리지에 카메라 초기화 플래그가 있으면 카메라 초기화
+            if (localStorage.getItem('camera_init_required') === 'true') {
+                debugLog('로컬 스토리지에서 카메라 초기화 플래그 감지');
+                // 1.5초 후 카메라 초기화 (페이지 로드 후 충분한 시간을 주기 위해)
+                setTimeout(() => {
+                    initializeCamera();
+                    // 카메라 초기화 플래그 제거
+                    localStorage.removeItem('camera_init_required');
+                }, 1500);
+            }
         }
         
         // 로그인 페이지로 리디렉션
@@ -496,13 +552,9 @@
 
         // 쿠키 가져오기 함수
         function getCookie(name) {
-            const nameEQ = name + '=';
-            const ca = document.cookie.split(';');
-            for (let i = 0; i < ca.length; i++) {
-                let c = ca[i];
-                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-            }
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
             return null;
         }
         
@@ -520,6 +572,43 @@
                 expires = '; expires=' + date.toUTCString();
             }
             document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Strict';
+        }
+
+        // 카메라 초기화 함수
+        function initializeCamera() {
+            // 카메라 관련 요소 확인
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            
+            if (!video) {
+                console.error('카메라 요소가 없습니다');
+                return;
+            }
+            
+            console.log('카메라 초기화 시작');
+            
+            // 이미 실행 중인 비디오 스트림이 있으면 중지
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+            
+            // 카메라 설정 함수가 있는지 확인하고 호출
+            if (typeof setupCamera === 'function') {
+                setupCamera().then(() => {
+                    console.log('카메라 초기화 성공');
+                    
+                    // 얼굴 감지 시작 (함수가 있는 경우)
+                    if (typeof startFaceDetection === 'function') {
+                        startFaceDetection();
+                    }
+                }).catch(error => {
+                    console.error('카메라 초기화 실패:', error);
+                });
+            } else if (typeof init === 'function') {
+                // init 함수가 있으면 호출
+                init();
+            }
         }
     </script>
 
