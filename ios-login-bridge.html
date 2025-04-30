@@ -144,25 +144,11 @@
                     
                     // 타임스탬프 추가하여 캐시 회피
                     const timestamp = new Date().getTime();
-                    const redirectUrl = `index.html?t=${timestamp}&autologin=true`;
+                    const redirectUrl = `index.html?t=${timestamp}&autologin=true&user_logged_in=true`;
                     
-                    // iOS용 특수 로그인 성공 처리
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = redirectUrl;
-                    
-                    // 추가 필드로 로그인 상태 전달
-                    const hiddenField = document.createElement('input');
-                    hiddenField.type = 'hidden';
-                    hiddenField.name = 'user_logged_in';
-                    hiddenField.value = 'true';
-                    form.appendChild(hiddenField);
-                    
-                    document.body.appendChild(form);
-                    
-                    // 약간의 지연 후 폼 제출
+                    // 폼 제출 방식 대신 직접 URL 이동 방식 사용
                     setTimeout(() => {
-                        form.submit();
+                        window.location.href = redirectUrl;
                     }, 1000);
                 })
                 .catch((error) => {
