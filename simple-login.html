@@ -137,21 +137,16 @@
         firebase.initializeApp(firebaseConfig);
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('페이지 로드됨');
-            
             // 테스트 계정 생성 (이미 존재하면 무시됨)
             createTestAccount();
             
             // 현재 로그인 상태 확인
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
-                    console.log('이미 로그인된 상태:', user.email);
-                    showMessage(`${user.email}로 로그인되어 있습니다. 홈으로 이동합니다...`, 'success');
+                    showMessage(`환영합니다! 홈으로 이동합니다...`, 'success');
                     setTimeout(() => {
                         window.location.href = 'index.html';
                     }, 1000);
-                } else {
-                    console.log('로그인 필요');
                 }
             });
             
@@ -169,15 +164,8 @@
         // 테스트 계정 생성
         function createTestAccount() {
             firebase.auth().createUserWithEmailAndPassword('test@example.com', 'test1234')
-                .then(() => {
-                    console.log('테스트 계정 생성 성공');
-                })
-                .catch((error) => {
-                    if (error.code === 'auth/email-already-in-use') {
-                        console.log('테스트 계정이 이미 존재함');
-                    } else {
-                        console.error('테스트 계정 생성 실패:', error);
-                    }
+                .catch(function(error) {
+                    // 이미 존재하는 계정이면 무시
                 });
         }
         
@@ -191,7 +179,6 @@
                 return;
             }
             
-            console.log('로그인 시도:', email);
             showMessage('로그인 중...', '');
             
             // 먼저 로그아웃 (깨끗한 상태에서 시작)
@@ -201,8 +188,6 @@
                     return firebase.auth().signInWithEmailAndPassword(email, password);
                 })
                 .then((userCredential) => {
-                    const user = userCredential.user;
-                    console.log('로그인 성공:', user.email);
                     showMessage('로그인 성공! 홈으로 이동합니다...', 'success');
                     
                     // 세션 스토리지에 로그인 성공 표시 (새로고침 시 사용)
@@ -214,8 +199,6 @@
                     }, 1000);
                 })
                 .catch((error) => {
-                    console.error('로그인 실패:', error);
-                    
                     let errorMessage;
                     switch(error.code) {
                         case 'auth/user-not-found':

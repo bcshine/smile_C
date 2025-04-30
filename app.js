@@ -82,20 +82,40 @@ async function init() {
 // 카메라 설정
 async function setupCamera() {
     try {
-        console.log("카메라 액세스 요청 중...");
+        // iOS Safari 및 Chrome에서 카메라 접근을 위한 추가 설정
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        console.log("디바이스 감지:", isIOS ? "iOS 기기" : "iOS 기기 아님");
         
-        // 모바일 환경에서는 후면 카메라 먼저 시도하고 실패하면 전면카메라 사용
+        // iOS 기기를 위한 특별한 제약 조건
         let constraints = {
             video: {
-                facingMode: { ideal: 'user' },
+                facingMode: 'user', // 항상 전면 카메라 사용
                 width: { ideal: isMobile ? 480 : 640 },
                 height: { ideal: isMobile ? 640 : 480 }
             },
             audio: false
         };
         
+        // iOS Chrome에서는 추가 설정 필요
+        if (isIOS && /CriOS|Chrome/.test(navigator.userAgent)) {
+            console.log("iOS Chrome 감지됨, 특수 설정 적용");
+            constraints.video = {
+                facingMode: 'user',
+                width: { min: 320, ideal: 640, max: 1280 },
+                height: { min: 240, ideal: 480, max: 720 }
+            };
+        }
+        
+        console.log("적용된 카메라 제약 조건:", JSON.stringify(constraints));
+        message.innerText = '카메라 권한을 허용해주세요...';
+        
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = stream;
+        
+        // iOS에서의 추가 설정
+        video.setAttribute('playsinline', true); // iOS에서 인라인 재생 허용
+        video.setAttribute('autoplay', true);    // 자동 재생 활성화
+        video.muted = true;                      // 음소거 (자동 재생 요구사항)
         
         // 비디오 스타일 설정
         video.style.width = '100%';
@@ -121,13 +141,46 @@ async function setupCamera() {
                 console.log("비디오 메타데이터 로드됨, 크기:", video.videoWidth, "x", video.videoHeight);
                 resizeCanvas();
                 
-                video.play().then(() => {
-                    console.log("비디오 재생 시작");
-                    resolve();
-                }).catch(err => {
-                    console.error("비디오 재생 실패:", err);
-                    resolve();
-                });
+                // iOS 디바이스에서 비디오 재생 처리를 다르게 함
+                if (isIOS) {
+                    console.log("iOS 디바이스에서 비디오 재생 시도");
+                    video.play()
+                        .then(() => {
+                            console.log("iOS에서 비디오 재생 성공");
+                            // iOS에서 비디오가 정상적으로 재생되는지 확인
+                            setTimeout(() => {
+                                if (video.paused) {
+                                    console.warn("iOS 비디오가 자동으로 일시 중지됨, 다시 재생 시도");
+                                    video.play()
+                                        .then(() => resolve())
+                                        .catch(e => {
+                                            console.error("iOS 재재생 실패:", e);
+                                            message.innerText = "iOS에서 비디오 재생에 실패했습니다. 페이지를 새로고침해주세요.";
+                                            resolve();
+                                        });
+                                } else {
+                                    resolve();
+                                }
+                            }, 1000);
+                        })
+                        .catch(err => {
+                            console.error("iOS 비디오 재생 실패:", err);
+                            message.innerText = "iOS에서 카메라 재생에 실패했습니다. 설정에서 카메라 접근을 허용해주세요.";
+                            resolve();
+                        });
+                } else {
+                    // 다른 디바이스에서는 기존 방식으로 처리
+                    video.play()
+                        .then(() => {
+                            console.log("비디오 재생 시작");
+                            resolve();
+                        })
+                        .catch(err => {
+                            console.error("비디오 재생 실패:", err);
+                            message.innerText = "비디오 재생에 실패했습니다. 카메라 권한을 확인해주세요.";
+                            resolve();
+                        });
+                }
             };
             
             video.onerror = (err) => {
@@ -142,6 +195,12 @@ async function setupCamera() {
             throw new Error('카메라 권한이 거부되었습니다. 브라우저 설정에서 카메라 접근을 허용해주세요.');
         } else if (error.name === 'NotFoundError') {
             throw new Error('카메라를 찾을 수 없습니다. 카메라가 연결되어 있는지 확인해주세요.');
+        } else if (error.name === 'NotSupportedError') {
+            throw new Error('브라우저가 미디어 장치 기능을 지원하지 않습니다. 다른 브라우저를 사용해보세요.');
+        } else if (error.name === 'AbortError') {
+            throw new Error('카메라 시작이 중단되었습니다. 다시 시도해주세요.');
+        } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+            throw new Error('카메라에 접근할 수 없습니다. 다른 앱이 카메라를 사용 중일 수 있습니다.');
         } else {
             throw new Error(`카메라에 접근할 수 없습니다: ${error.message}`);
         }

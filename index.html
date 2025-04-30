@@ -53,29 +53,13 @@
         let profileModal;
         let profileForm;
 
-        // 디버그 로그 함수
+        // 디버그 로그 함수 - 빈 함수로 대체하여 디버그 정보 제거
         function debugLog(message) {
-            console.log(message);
-            const debugPanel = document.getElementById('debug-panel');
-            const debugLog = document.getElementById('debug-log');
-            
-            if (!debugPanel || !debugLog) return;
-            
-            // 디버그 패널 표시
-            debugPanel.style.display = 'block';
-            
-            // 로그 추가
-            const timestamp = new Date().toLocaleTimeString();
-            debugLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
-            
-            // 스크롤을 항상 가장 아래로
-            debugLog.scrollTop = debugLog.scrollHeight;
+            // 아무 동작도 하지 않음
         }
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', function() {
-            debugLog("인덱스 페이지 로드됨");
-            
             // DOM 요소 초기화
             loginBtn = document.getElementById('loginBtn');
             logoutBtn = document.getElementById('logoutBtn');
@@ -89,35 +73,28 @@
             
             // 요소가 모두 존재하는지 확인
             if (!loginBtn || !logoutBtn || !userInfo || !userEmail || !mainContent || !loginMessage) {
-                debugLog("오류: 일부 필수 DOM 요소를 찾을 수 없습니다.");
                 return;
             }
-            
+                
             // 로그인 버튼 클릭 이벤트
             loginBtn.addEventListener('click', function() {
-                debugLog("로그인 버튼 클릭됨");
                 window.location.href = 'simple-login.html';
             });
             
             // 로그아웃 버튼 클릭 이벤트
             logoutBtn.addEventListener('click', function() {
-                debugLog("로그아웃 버튼 클릭됨");
-                
                 firebase.auth().signOut()
                     .then(function() {
-                        debugLog("로그아웃 성공");
                         // 주의: 로그아웃 후 UI는 onAuthStateChanged에서 처리
                     })
                     .catch(function(error) {
-                        debugLog("로그아웃 실패: " + error.message);
+                        // 오류 무시
                     });
             });
             
             // 인증 상태 변경 감지
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
-                    debugLog(`인증 상태 변경됨: 로그인됨 (${user.email})`);
-                    
                     // 로그인 상태 UI 표시
                     loginBtn.style.display = 'none';
                     userInfo.style.display = 'flex';
@@ -129,7 +106,6 @@
                     
                     // 카메라 초기화 (init 함수가 있을 경우)
                     if (typeof init === 'function') {
-                        debugLog("카메라 초기화 호출");
                         init();
                     }
                     
@@ -138,7 +114,6 @@
                         .then(function(doc) {
                             if (doc.exists) {
                                 const userData = doc.data();
-                                debugLog("사용자 정보 로드됨");
                                 
                                 // 이메일 대신 사용자 이름 또는 환영 메시지 표시
                                 if (userData.name) {
@@ -150,7 +125,6 @@
                                     notificationToggle.checked = userData.notificationsEnabled || false;
                                 }
                             } else {
-                                debugLog("사용자 문서 없음, 새로 생성");
                                 // 문서가 없으면 기본 문서 생성
                                 db.collection('users').doc(user.uid).set({
                                     email: user.email,
@@ -159,11 +133,9 @@
                             }
                         })
                         .catch(function(error) {
-                            debugLog("Firestore 오류: " + error.message);
+                            // 오류 무시
                         });
                 } else {
-                    debugLog("인증 상태 변경됨: 로그아웃됨");
-                    
                     // 로그아웃 상태 UI 표시
                     loginBtn.style.display = 'block';
                     userInfo.style.display = 'none';
@@ -744,19 +716,7 @@
         }
 
         .debug-panel {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: #333;
-            color: #fff;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 9999;
+            display: none !important; /* Force hide debug panel */
         }
         
         .direct-login-btn {
@@ -885,9 +845,5 @@
         });
       }
     </script>
-
-    <div id="debug-panel" class="debug-panel" style="display: none;">
-        <div id="debug-log"></div>
-    </div>
 </body>
 </html> 
