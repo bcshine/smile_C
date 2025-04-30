@@ -1,0 +1,26 @@
+{
+  "name": "Smile C",
+  "short_name": "Smile",
+  "description": "Smile C 애플리케이션 - 푸시 알림을 제공하는 PWA 앱",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3498db",
+  "icons": [
+    {
+      "src": "images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "portrait",
+  "prefer_related_applications": false,
+  "gcm_sender_id": "747999033560"
+} 

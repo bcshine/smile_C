@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCM 테스트</title>
+    <!-- PWA 관련 메타 태그 추가 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="description" content="Smile C 애플리케이션의 FCM 테스트 도구">
+    <script>
+    // 페이지 로드 시 프로토콜 확인
+    document.addEventListener('DOMContentLoaded', function() {
+        const status = document.createElement('div');
+        status.style.padding = '10px';
+        status.style.margin = '10px 0';
+        status.style.border = '1px solid #f00';
+        status.style.borderRadius = '5px';
+        status.style.backgroundColor = '#fff3f3';
+        status.style.color = '#d32f2f';
+        
+        if (window.location.protocol === 'file:') {
+            status.innerHTML = '<strong>중요 오류:</strong> 서비스 워커와 FCM은 file:// 프로토콜에서 작동하지 않습니다.<br>' +
+                               '이 페이지는 반드시 웹 서버(http:// 또는 https://)를 통해 접근해야 합니다.<br>' +
+                               '다음 명령어로 웹 서버를 실행하세요: <code>npx http-server</code> 또는 <code>python -m http.server</code>';
+            document.body.prepend(status);
+        }
+        
+        if (!('serviceWorker' in navigator)) {
+            status.innerHTML = '<strong>오류:</strong> 이 브라우저는 서비스 워커를 지원하지 않습니다.';
+            document.body.prepend(status);
+        }
+        
+        // PWA 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/pwa-sw.js')
+                .then(registration => {
+                    console.log('PWA 서비스 워커 등록 성공:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('PWA 서비스 워커 등록 실패:', error);
+                });
+        }
+        
+        // PWA 설치 이벤트 처리
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // 브라우저 기본 설치 프롬프트 방지
+            e.preventDefault();
+            // 이벤트 저장
+            deferredPrompt = e;
+            // 설치 버튼 표시
+            showInstallButton();
+        });
+        
+        // PWA 설치 버튼 표시 함수
+        function showInstallButton() {
+            const installCard = document.createElement('div');
+            installCard.className = 'card';
+            installCard.innerHTML = `
+                <h2>💡 앱으로 설치하기</h2>
+                <p>더 나은 경험을 위해 앱으로 설치하세요!</p>
+                <button id="install-app" class="button" style="background-color: #e74c3c;">앱 설치하기</button>
+            `;
+            document.body.insertBefore(installCard, document.body.firstChild);
+            
+            document.getElementById('install-app').addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                // 설치 프롬프트 표시
+                deferredPrompt.prompt();
+                // 사용자 응답 대기
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`사용자 응답: ${outcome}`);
+                // 프롬프트를 한 번만 표시할 수 있음
+                deferredPrompt = null;
+                // 설치 후 버튼 숨기기
+                if (outcome === 'accepted') {
+                    installCard.style.display = 'none';
+                }
+            });
+        }
+    });
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #3498db;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>FCM 테스트 도구</h1>
+    
+    <div class="card">
+        <h2>1. 알림 권한 확인</h2>
+        <button id="check-permission" class="button">권한 확인</button>
+        <div id="permission-status" class="status"></div>
+    </div>
+
+    <div class="card">
+        <h2>2. 서비스 워커 등록 확인</h2>
+        <button id="check-sw" class="button">서비스 워커 확인</button>
+        <div id="sw-status" class="status"></div>
+    </div>
+
+    <div class="card">
+        <h2>3. FCM 토큰 확인</h2>
+        <button id="get-token" class="button">토큰 가져오기</button>
+        <div id="token-status" class="status"></div>
+        <textarea id="token-value" rows="3" readonly></textarea>
+        <div style="margin-top: 10px;">
+            <label for="vapid-key">VAPID 키 확인:</label>
+            <input type="text" id="vapid-key" style="width: 100%; margin-top: 5px;" 
+                   value="BFkVSifXl5Jb7dNqyDA0eKPHFCOSWUzgpzxpcZOqdYKZp0YCma-kNZyr3KDxpJ_vwaNaVnVlcwunUmIkKOiwl-s">
+            <button id="check-vapid" class="button" style="margin-top: 5px; background-color: #9b59b6;">VAPID 키 검증</button>
+            <div id="vapid-status" class="status"></div>
+        </div>
+        <button id="register-token" class="button" style="margin-top: 10px; background-color: #27ae60;">Firebase에 테스트 기기로 등록</button>
+    </div>
+
+    <div class="card">
+        <h2>4. 로컬 알림 테스트</h2>
+        <input type="text" id="notification-title" placeholder="알림 제목" value="테스트 알림">
+        <textarea id="notification-body" placeholder="알림 내용" rows="2">이것은 테스트 알림입니다.</textarea>
+        <button id="send-notification" class="button">알림 보내기</button>
+        <div id="notification-status" class="status"></div>
+    </div>
+    
+    <!-- PWA 설치 안내 -->
+    <div class="card">
+        <h2>5. 오프라인 모드 테스트</h2>
+        <p>이 앱은 PWA(Progressive Web App)로 구현되어 있어 오프라인에서도 작동합니다.</p>
+        <p>테스트 방법:</p>
+        <ol>
+            <li>네트워크 연결을 끊고(비행기 모드 등) 앱을 새로고침하세요</li>
+            <li>기본 기능은 오프라인에서도 작동해야 합니다</li>
+            <li>Firebase 관련 기능은 오프라인에서 작동하지 않습니다</li>
+        </ol>
+        <a href="/offline.html" class="button" style="background-color: #9b59b6; text-decoration: none;">오프라인 페이지 확인</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwx7sfeHtmqxb3D-CkyB4DBtFFEpG0ADw",
+            authDomain: "smile-c-b8074.firebaseapp.com",
+            projectId: "smile-c-b8074",
+            storageBucket: "smile-c-b8074.firebasestorage.app",
+            messagingSenderId: "747999033560",
+            appId: "1:747999033560:web:53d62a80b2086bc3f1ffad",
+            measurementId: "G-TK56LG30CK"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+        const db = getFirestore(app);
+        
+        let currentFcmToken = '';
+
+        // 알림 권한 확인
+        document.getElementById('check-permission').addEventListener('click', async () => {
+            const permissionStatus = document.getElementById('permission-status');
+            try {
+                const permission = await Notification.requestPermission();
+                permissionStatus.textContent = `현재 권한 상태: ${permission}`;
+                permissionStatus.className = permission === 'granted' ? 
+                    'status success' : 'status error';
+            } catch (error) {
+                permissionStatus.textContent = `오류: ${error.message}`;
+                permissionStatus.className = 'status error';
+            }
+        });
+
+        // 서비스 워커 확인
+        document.getElementById('check-sw').addEventListener('click', async () => {
+            const swStatus = document.getElementById('sw-status');
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length === 0) {
+                        swStatus.textContent = '등록된 서비스 워커가 없습니다.';
+                        swStatus.className = 'status error';
+                    } else {
+                        let swInfo = '등록된 서비스 워커:';
+                        registrations.forEach(reg => {
+                            swInfo += `\n- 스코프: ${reg.scope}, 상태: ${reg.active ? '활성' : '비활성'}`;
+                        });
+                        swStatus.textContent = swInfo;
+                        swStatus.className = 'status success';
+                    }
+                } else {
+                    swStatus.textContent = '이 브라우저는 서비스 워커를 지원하지 않습니다.';
+                    swStatus.className = 'status error';
+                }
+            } catch (error) {
+                swStatus.textContent = `오류: ${error.message}`;
+                swStatus.className = 'status error';
+            }
+        });
+
+        // 초기화 시 버튼 비활성화
+        document.getElementById('register-token').disabled = true;
+        
+        // VAPID 키 검증
+        document.getElementById('check-vapid').addEventListener('click', () => {
+            const vapidKey = document.getElementById('vapid-key').value.trim();
+            const vapidStatus = document.getElementById('vapid-status');
+            
+            // VAPID 키 기본 검증
+            if (!vapidKey) {
+                vapidStatus.textContent = 'VAPID 키가 비어 있습니다.';
+                vapidStatus.className = 'status error';
+                return;
+            }
+            
+            // 길이 검증 (일반적인 VAPID 키는 길이가 길다)
+            if (vapidKey.length < 50) {
+                vapidStatus.textContent = 'VAPID 키가 너무 짧습니다. 유효한 키인지 확인하세요.';
+                vapidStatus.className = 'status error';
+                return;
+            }
+            
+            // Base64 문자 검증
+            const base64Regex = /^[A-Za-z0-9\-_=]+$/;
+            if (!base64Regex.test(vapidKey)) {
+                vapidStatus.textContent = 'VAPID 키에 유효하지 않은 문자가 포함되어 있습니다. Base64 문자만 포함해야 합니다.';
+                vapidStatus.className = 'status error';
+                return;
+            }
+            
+            vapidStatus.textContent = 'VAPID 키 형식이 유효합니다. Firebase 웹 앱 설정에서 웹 푸시 인증서가 제대로 구성되었는지 확인하세요.';
+            vapidStatus.className = 'status success';
+        });
+        
+        // FCM 토큰 가져오기 함수 (커스텀 VAPID 키 사용)
+        async function getFcmToken() {
+            const tokenStatus = document.getElementById('token-status');
+            const tokenValue = document.getElementById('token-value');
+            const vapidKey = document.getElementById('vapid-key').value.trim();
+            
+            try {
+                tokenStatus.textContent = '서비스 워커 등록 중...';
+                tokenStatus.className = 'status';
+                
+                // 기존 서비스 워커 확인
+                const existingRegs = await navigator.serviceWorker.getRegistrations();
+                if (existingRegs.length > 0) {
+                    console.log('기존 서비스 워커 찾음:', existingRegs);
+                }
+                
+                // 서비스 워커 등록
+                const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js', {
+                    scope: './'
+                });
+                console.log('서비스 워커가 등록되었습니다:', registration);
+                
+                tokenStatus.textContent = '서비스 워커 등록 완료, FCM 토큰 요청 중...';
+                
+                // FCM 토큰 가져오기
+                try {
+                    const currentToken = await getToken(messaging, {
+                        vapidKey: vapidKey,
+                        serviceWorkerRegistration: registration
+                    });
+
+                    if (currentToken) {
+                        currentFcmToken = currentToken;
+                        tokenStatus.textContent = '토큰이 성공적으로 생성되었습니다.';
+                        tokenStatus.className = 'status success';
+                        tokenValue.value = currentToken;
+                        document.getElementById('register-token').disabled = false;
+                    } else {
+                        tokenStatus.textContent = '토큰을 가져올 수 없습니다. 알림 권한을 확인하세요.';
+                        tokenStatus.className = 'status error';
+                        tokenValue.value = '';
+                        document.getElementById('register-token').disabled = true;
+                    }
+                } catch (tokenError) {
+                    console.error('FCM 토큰 가져오기 세부 오류:', tokenError);
+                    tokenStatus.textContent = `FCM 토큰 오류: ${tokenError.message || '알 수 없는 오류'}`;
+                    tokenStatus.className = 'status error';
+                    tokenValue.value = `오류 상세 정보: ${JSON.stringify(tokenError)}`;
+                }
+            } catch (error) {
+                console.error('서비스 워커 등록 오류:', error);
+                tokenStatus.textContent = `서비스 워커 등록 오류: ${error.message}`;
+                tokenStatus.className = 'status error';
+                tokenValue.value = `오류 상세 정보: ${JSON.stringify(error)}`;
+                document.getElementById('register-token').disabled = true;
+            }
+        }
+        
+        // 토큰 버튼에 새 함수 연결
+        document.getElementById('get-token').addEventListener('click', getFcmToken);
+
+        // Firebase에 테스트 토큰 등록
+        document.getElementById('register-token').addEventListener('click', async () => {
+            const tokenStatus = document.getElementById('token-status');
+            
+            if (!currentFcmToken) {
+                tokenStatus.textContent = '먼저 토큰을 가져와주세요.';
+                tokenStatus.className = 'status error';
+                return;
+            }
+            
+            try {
+                // Firestore에 토큰 등록
+                const deviceId = 'test-device-' + new Date().getTime();
+                await setDoc(doc(db, 'fcmTestTokens', deviceId), {
+                    token: currentFcmToken,
+                    name: '테스트 기기 - 웹',
+                    platform: 'web',
+                    createdAt: new Date().toISOString()
+                });
+                
+                tokenStatus.textContent = '테스트 기기로 성공적으로 등록되었습니다. 이제 Firebase 콘솔에서 이 기기를 선택하여 테스트 메시지를 보낼 수 있습니다.';
+                tokenStatus.className = 'status success';
+                
+            } catch (error) {
+                tokenStatus.textContent = `테스트 기기 등록 오류: ${error.message}`;
+                tokenStatus.className = 'status error';
+                console.error('테스트 기기 등록 오류:', error);
+            }
+        });
+
+        // 로컬 알림 보내기
+        document.getElementById('send-notification').addEventListener('click', async () => {
+            const title = document.getElementById('notification-title').value;
+            const body = document.getElementById('notification-body').value;
+            const notificationStatus = document.getElementById('notification-status');
+            
+            try {
+                if (Notification.permission !== 'granted') {
+                    await Notification.requestPermission();
+                }
+                
+                if (Notification.permission === 'granted') {
+                    if ('serviceWorker' in navigator) {
+                        const registration = await navigator.serviceWorker.ready;
+                        await registration.showNotification(title, {
+                            body: body,
+                            icon: './images/notification-icon.png',
+                            badge: './images/notification-badge.png'
+                        });
+                        
+                        notificationStatus.textContent = '알림이 성공적으로 발송되었습니다.';
+                        notificationStatus.className = 'status success';
+                    } else {
+                        const notification = new Notification(title, {
+                            body: body,
+                            icon: './images/notification-icon.png',
+                        });
+                        
+                        notificationStatus.textContent = '알림이 성공적으로 발송되었습니다 (서비스 워커 없음).';
+                        notificationStatus.className = 'status success';
+                    }
+                } else {
+                    notificationStatus.textContent = '알림 권한이 없습니다.';
+                    notificationStatus.className = 'status error';
+                }
+            } catch (error) {
+                notificationStatus.textContent = `오류: ${error.message}`;
+                notificationStatus.className = 'status error';
+                console.error('알림 발송 오류:', error);
+            }
+        });
+    </script>
+</body>
+</html> 

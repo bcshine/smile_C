@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>알림 상세 내용</title>
+    <!-- PWA 관련 메타 태그 추가 -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="description" content="Smile C 애플리케이션의 알림 상세 내용 페이지">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .notification-card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .notification-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .notification-body {
+            font-size: 18px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+        }
+        .notification-time {
+            font-size: 14px;
+            color: #888;
+        }
+        .back-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .back-button:hover {
+            background-color: #2980b9;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .icon {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="./images/notification-icon.png" alt="알림 아이콘" class="icon">
+        <h1>알림 상세 내용</h1>
+    </div>
+    
+    <div class="notification-card">
+        <h2 class="notification-title" id="notification-title">제목 로딩 중...</h2>
+        <div class="notification-body" id="notification-body">내용 로딩 중...</div>
+        <div class="notification-time" id="notification-time"></div>
+    </div>
+    
+    <button class="back-button" onclick="goBack()">뒤로 가기</button>
+    
+    <script>
+        // PWA 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/pwa-sw.js')
+                .then(registration => {
+                    console.log('PWA 서비스 워커 등록 성공:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('PWA 서비스 워커 등록 실패:', error);
+                });
+        }
+        
+        // URL에서 매개변수 가져오기
+        function getUrlParams() {
+            const params = {};
+            const queryString = window.location.search.substring(1);
+            const pairs = queryString.split('&');
+            
+            for (let i = 0; i < pairs.length; i++) {
+                const pair = pairs[i].split('=');
+                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+            }
+            
+            return params;
+        }
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            // URL 매개변수 가져오기
+            const params = getUrlParams();
+            
+            // 알림 제목과 내용 표시
+            if (params.title) {
+                document.getElementById('notification-title').textContent = params.title;
+                document.title = params.title; // 페이지 제목도 업데이트
+            }
+            
+            if (params.body) {
+                document.getElementById('notification-body').textContent = params.body;
+            }
+            
+            // 현재 시간 표시
+            const now = new Date();
+            document.getElementById('notification-time').textContent = `수신 시간: ${now.toLocaleString()}`;
+        });
+        
+        // 뒤로 가기 함수
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+        
+        // 메시지 수신 리스너 등록 (다른 탭/창에서 알림을 클릭했을 때)
+        navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'NOTIFICATION_CLICK') {
+                const notification = event.data.notification;
+                
+                if (notification.title) {
+                    document.getElementById('notification-title').textContent = notification.title;
+                    document.title = notification.title;
+                }
+                
+                if (notification.body) {
+                    document.getElementById('notification-body').textContent = notification.body;
+                }
+                
+                const now = new Date();
+                document.getElementById('notification-time').textContent = `수신 시간: ${now.toLocaleString()}`;
+            }
+        });
+    </script>
+</body>
+</html> 

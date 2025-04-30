@@ -11,15 +11,14 @@
     <!-- 배민 주아체 추가 -->
     <link href="https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2310@1.0/BMJUA.woff2" rel="stylesheet">
     <!-- Firebase SDK -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-        import { getAuth, onAuthStateChanged, signOut, updateProfile, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js";
-        import { getFirestore, doc, setDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
 
-        // Your web app's Firebase configuration
+    <script>
+        // Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyCwx7sfeHtmqxb3D-CkyB4DBtFFEpG0ADw",
             authDomain: "smile-c-b8074.firebaseapp.com",
@@ -30,126 +29,181 @@
             measurementId: "G-TK56LG30CK"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-        const messaging = getMessaging(app);
-        const db = getFirestore(app);
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        
+        // 디버깅을 위한 전역 변수
+        window.app = {
+            authInitialized: false,
+            navigating: false
+        };
+        
+        const db = firebase.firestore();
+        const messaging = firebase.messaging();
+        const analytics = firebase.analytics();
 
         // DOM Elements
-        const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const loginModal = document.getElementById('loginModal');
-        const closeBtn = document.querySelector('.close-btn');
-        const loginForm = document.getElementById('loginForm');
-        const googleLoginBtn = document.getElementById('googleLoginBtn');
-        const userInfo = document.querySelector('.user-info');
-        const userEmail = document.querySelector('.user-email');
-        const mainContent = document.getElementById('main-content');
-        const loginMessage = document.getElementById('login-message');
-        const notificationToggle = document.getElementById('notification-toggle');
-        const profileModal = document.getElementById('profileModal');
-        const profileForm = document.getElementById('profileForm');
+        let loginBtn;
+        let logoutBtn;
+        let userInfo;
+        let userEmail;
+        let mainContent;
+        let loginMessage;
+        let notificationToggle;
+        let profileModal;
+        let profileForm;
+
+        // 디버그 로그 함수
+        function debugLog(message) {
+            console.log(message);
+            const debugPanel = document.getElementById('debug-panel');
+            const debugLog = document.getElementById('debug-log');
+            
+            if (!debugPanel || !debugLog) return;
+            
+            // 디버그 패널 표시
+            debugPanel.style.display = 'block';
+            
+            // 로그 추가
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            
+            // 스크롤을 항상 가장 아래로
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
 
         // Event Listeners
-        loginBtn.addEventListener('click', () => {
-            loginModal.style.display = 'block';
-        });
-
-        closeBtn.addEventListener('click', () => {
-            loginModal.style.display = 'none';
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog("인덱스 페이지 로드됨");
             
-            const name = document.getElementById('signupName').value;
-            const phone = document.getElementById('signupPhone').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            const pushConsent = document.getElementById('pushConsent').checked;
-
-            // 에러 메시지 초기화
-            document.querySelectorAll('.error-message').forEach(el => el.style.display = 'none');
-
-            let hasError = false;
-
-            // 유효성 검사
-            if (!name) {
-                document.getElementById('nameError').style.display = 'block';
-                hasError = true;
+            // DOM 요소 초기화
+            loginBtn = document.getElementById('loginBtn');
+            logoutBtn = document.getElementById('logoutBtn');
+            userInfo = document.querySelector('.user-info');
+            userEmail = document.querySelector('.user-email');
+            mainContent = document.getElementById('main-content');
+            loginMessage = document.getElementById('login-message');
+            notificationToggle = document.getElementById('notification-toggle');
+            profileModal = document.getElementById('profileModal');
+            profileForm = document.getElementById('profileForm');
+            
+            // 요소가 모두 존재하는지 확인
+            if (!loginBtn || !logoutBtn || !userInfo || !userEmail || !mainContent || !loginMessage) {
+                debugLog("오류: 일부 필수 DOM 요소를 찾을 수 없습니다.");
+                return;
             }
-
-            if (!phone || !/^[0-9]{3}-[0-9]{4}-[0-9]{4}$/.test(phone)) {
-                document.getElementById('phoneError').style.display = 'block';
-                hasError = true;
-            }
-
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                document.getElementById('emailError').style.display = 'block';
-                hasError = true;
-            }
-
-            if (!password || password.length < 8) {
-                document.getElementById('passwordError').style.display = 'block';
-                hasError = true;
-            }
-
-            if (!pushConsent) {
-                alert('웹 푸시 알림 수신 동의는 필수입니다.');
-                hasError = true;
-            }
-
-            if (hasError) return;
-
-            try {
-                // Firebase Authentication으로 회원가입
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
-
-                // 사용자 프로필 업데이트
-                await updateProfile(user, {
-                    displayName: name
-                });
-
-                // Firestore에 사용자 정보 저장
-                const userDoc = doc(db, 'users', user.uid);
-                await setDoc(userDoc, {
-                    name: name,
-                    phone: phone,
-                    email: email,
-                    notificationsEnabled: true,
-                    lastUpdated: new Date().toISOString()
-                });
-
-                loginModal.style.display = 'none';
+            
+            // 로그인 버튼 클릭 이벤트
+            loginBtn.addEventListener('click', function() {
+                debugLog("로그인 버튼 클릭됨");
+                window.location.href = 'simple-login.html';
+            });
+            
+            // 로그아웃 버튼 클릭 이벤트
+            logoutBtn.addEventListener('click', function() {
+                debugLog("로그아웃 버튼 클릭됨");
                 
-                // FCM 토큰 등록 시작
-                if (pushConsent) {
-                    await requestNotificationPermission(user);
+                firebase.auth().signOut()
+                    .then(function() {
+                        debugLog("로그아웃 성공");
+                        // 주의: 로그아웃 후 UI는 onAuthStateChanged에서 처리
+                    })
+                    .catch(function(error) {
+                        debugLog("로그아웃 실패: " + error.message);
+                    });
+            });
+            
+            // 인증 상태 변경 감지
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (user) {
+                    debugLog(`인증 상태 변경됨: 로그인됨 (${user.email})`);
+                    
+                    // 로그인 상태 UI 표시
+                    loginBtn.style.display = 'none';
+                    userInfo.style.display = 'flex';
+                    mainContent.style.display = 'block';
+                    loginMessage.style.display = 'none';
+                    
+                    // 사용자 이메일 표시 대신 환영 메시지 표시
+                    userEmail.textContent = "환영합니다!";
+                    
+                    // 카메라 초기화 (init 함수가 있을 경우)
+                    if (typeof init === 'function') {
+                        debugLog("카메라 초기화 호출");
+                        init();
+                    }
+                    
+                    // Firestore에서 사용자 정보 가져오기
+                    db.collection('users').doc(user.uid).get()
+                        .then(function(doc) {
+                            if (doc.exists) {
+                                const userData = doc.data();
+                                debugLog("사용자 정보 로드됨");
+                                
+                                // 이메일 대신 사용자 이름 또는 환영 메시지 표시
+                                if (userData.name) {
+                                    userEmail.textContent = userData.name + "님 환영합니다!";
+                                }
+                                
+                                // 알림 설정 상태 확인
+                                if (notificationToggle) {
+                                    notificationToggle.checked = userData.notificationsEnabled || false;
+                                }
+                            } else {
+                                debugLog("사용자 문서 없음, 새로 생성");
+                                // 문서가 없으면 기본 문서 생성
+                                db.collection('users').doc(user.uid).set({
+                                    email: user.email,
+                                    createdAt: new Date().toISOString()
+                                }, { merge: true });
+                            }
+                        })
+                        .catch(function(error) {
+                            debugLog("Firestore 오류: " + error.message);
+                        });
+                } else {
+                    debugLog("인증 상태 변경됨: 로그아웃됨");
+                    
+                    // 로그아웃 상태 UI 표시
+                    loginBtn.style.display = 'block';
+                    userInfo.style.display = 'none';
+                    mainContent.style.display = 'none';
+                    loginMessage.style.display = 'block';
                 }
-            } catch (error) {
-                console.error('회원가입 실패:', error);
-                alert('회원가입 중 오류가 발생했습니다: ' + error.message);
-            }
-        });
+            });
+            
+            // 알림 토글 이벤트 처리
+            if (notificationToggle) {
+                notificationToggle.addEventListener('change', async (e) => {
+                    const user = firebase.auth().currentUser;
+                    if (!user) return;
 
-        googleLoginBtn.addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, provider);
-                loginModal.style.display = 'none';
-            } catch (error) {
-                alert('Google 로그인 실패: ' + error.message);
+                    const userDoc = firebase.firestore().collection('users').doc(user.uid);
+                    if (e.target.checked) {
+                        requestNotificationPermission(user);
+                        
+                        // 테스트 알림 전송
+                        setTimeout(() => {
+                            showNotification('알림 테스트', '알림이 정상적으로 작동하고 있습니다. 🎉');
+                        }, 2000);
+                    } else {
+                        await userDoc.update({
+                            notificationsEnabled: false,
+                            lastUpdated: new Date().toISOString()
+                        });
+                        showNotification('알림이 비활성화되었습니다', '더 이상 알림을 받지 않습니다.');
+                    }
+                });
             }
-        });
 
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                window.location.href = 'login.html';
-            } catch (error) {
-                console.error('로그아웃 실패:', error);
+            // 프로필 폼 제출 이벤트
+            if (profileForm) {
+                profileForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const name = document.getElementById('userName').value;
+                    const phone = document.getElementById('userPhone').value;
+                    saveUserProfile(name, phone);
+                });
             }
         });
 
@@ -157,26 +211,30 @@
         async function initializeFCM() {
             try {
                 // 서비스 워커 등록
-                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                    scope: '/'
+                const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js', {
+                    scope: './'
                 });
                 console.log('서비스 워커가 등록되었습니다:', registration);
 
                 // FCM 토큰 가져오기
-                const currentToken = await getToken(messaging, {
-                    vapidKey: 'BFkVSifXl5Jb7dNqyDA0eKPHFCOSWUzgpzxpcZOqdYKZp0YCma-kNZyr3KDxpJ_vwaNaVnVlcwunUmIkKOiwl-s', // Firebase 콘솔에서 생성한 키로 교체
+                const currentToken = await messaging.getToken({
+                    vapidKey: 'BFkVSifXl5Jb7dNqyDA0eKPHFCOSWUzgpzxpcZOqdYKZp0YCma-kNZyr3KDxpJ_vwaNaVnVlcwunUmIkKOiwl-s', 
                     serviceWorkerRegistration: registration
                 });
 
                 if (currentToken) {
                     console.log('FCM 토큰:', currentToken);
+                    console.log('토큰이 성공적으로 발급되었습니다. 길이:', currentToken.length);
                     return currentToken;
                 } else {
-                    console.log('토큰을 가져올 수 없습니다.');
+                    console.error('토큰을 가져올 수 없습니다. 다음을 확인하세요:');
+                    console.error('1. 브라우저가 FCM을 지원하는지');
+                    console.error('2. VAPID 키가 올바른지');
+                    console.error('3. 서비스 워커가 제대로 등록되었는지');
                     return null;
                 }
             } catch (err) {
-                console.log('FCM 초기화 중 오류 발생:', err);
+                console.error('FCM 초기화 중 오류 발생:', err);
                 return null;
             }
         }
@@ -190,8 +248,8 @@
                     
                     if (fcmToken) {
                         // Firestore에 토큰 저장
-                        const userDoc = doc(db, 'users', user.uid);
-                        await setDoc(userDoc, {
+                        const userDoc = db.collection('users').doc(user.uid);
+                        await userDoc.set({
                             email: user.email,
                             fcmToken: fcmToken,
                             notificationsEnabled: true,
@@ -211,25 +269,8 @@
             }
         }
 
-        // 알림 토글 이벤트 처리
-        notificationToggle.addEventListener('change', async (e) => {
-            const user = auth.currentUser;
-            if (!user) return;
-
-            const userDoc = doc(db, 'users', user.uid);
-            if (e.target.checked) {
-                await requestNotificationPermission(user);
-            } else {
-                await updateDoc(userDoc, {
-                    notificationsEnabled: false,
-                    lastUpdated: new Date().toISOString()
-                });
-                showNotification('알림이 비활성화되었습니다', '더 이상 알림을 받지 않습니다.');
-            }
-        });
-
         // 푸시 메시지 수신 처리
-        onMessage(messaging, (payload) => {
+        messaging.onMessage((payload) => {
             console.log('메시지 수신:', payload);
             if (payload.notification) {
                 showNotification(
@@ -247,32 +288,29 @@
             }
 
             if (Notification.permission === "granted") {
-                const notification = new Notification(title, {
-                    body: body,
-                    icon: '/images/notification-icon.png',
-                    badge: '/images/notification-badge.png',
-                    timestamp: Date.now()
+                navigator.serviceWorker.ready.then((registration) => {
+                    registration.showNotification(title, {
+                        body: body,
+                        icon: './images/notification-icon.png',
+                        badge: './images/notification-badge.png',
+                        timestamp: Date.now()
+                    });
                 });
-
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
             }
         }
 
         // 사용자 정보 저장 함수
         async function saveUserProfile(name, phone) {
-            const user = auth.currentUser;
+            const user = firebase.auth().currentUser;
             if (!user) return;
 
             try {
-                await updateProfile(user, {
+                await user.updateProfile({
                     displayName: name
                 });
 
-                const userDoc = doc(db, 'users', user.uid);
-                await setDoc(userDoc, {
+                const userDoc = db.collection('users').doc(user.uid);
+                await userDoc.set({
                     name: name,
                     phone: phone,
                     email: user.email,
@@ -287,62 +325,70 @@
             }
         }
 
-        // 프로필 폼 제출 이벤트
-        profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('userName').value;
-            const phone = document.getElementById('userPhone').value;
-            await saveUserProfile(name, phone);
-        });
-
-        // 전화번호 입력 형식 자동 변환
-        document.getElementById('userPhone').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/[^0-9]/g, '');
-            if (value.length > 3 && value.length <= 7) {
-                value = value.slice(0,3) + '-' + value.slice(3);
-            } else if (value.length > 7) {
-                value = value.slice(0,3) + '-' + value.slice(3,7) + '-' + value.slice(7,11);
+        // UI 업데이트 함수
+        function updateUI(user) {
+            if (!loginBtn || !userInfo || !mainContent || !loginMessage) {
+                console.error('필요한 DOM 요소를 찾을 수 없습니다');
+                return;
             }
-            e.target.value = value;
-        });
-
-        // 인증 상태 변경 감지
-        onAuthStateChanged(auth, async (user) => {
+            
             if (user) {
+                // 로그인된 상태
+                console.log('UI 업데이트: 로그인 상태');
                 loginBtn.style.display = 'none';
                 userInfo.style.display = 'flex';
                 mainContent.style.display = 'block';
                 loginMessage.style.display = 'none';
                 
-                // 사용자 정보 확인
-                const userDoc = doc(db, 'users', user.uid);
-                const userSnapshot = await getDoc(userDoc);
-                
-                if (userSnapshot.exists()) {
-                    // 사용자 정보가 있으면 이름 표시
-                    userEmail.textContent = userSnapshot.data().name;
-                    
-                    // 알림 설정 상태 확인
-                    notificationToggle.checked = userSnapshot.data().notificationsEnabled || false;
-                    
-                    // FCM 초기화
-                    if (notificationToggle.checked) {
-                        await initializeFCM();
-                    }
+                // 사용자 이름 표시
+                if (userEmail) {
+                    userEmail.textContent = user.displayName || user.email;
                 }
                 
-                init();
+                // Firestore에서 사용자 정보 가져오기
+                db.collection('users').doc(user.uid).get()
+                    .then(function(doc) {
+                        if (doc.exists) {
+                            const userData = doc.data();
+                            
+                            // 사용자 정보 표시
+                            if (userEmail && userData.name) {
+                                userEmail.textContent = userData.name;
+                            }
+                            
+                            // 알림 설정 상태 확인
+                            if (notificationToggle) {
+                                notificationToggle.checked = userData.notificationsEnabled || false;
+                            }
+                            
+                            // FCM 토큰 갱신
+                            if (notificationToggle && notificationToggle.checked) {
+                                initializeFCM().then(function(fcmToken) {
+                                    if (fcmToken) {
+                                        // Firestore에 토큰 업데이트
+                                        db.collection('users').doc(user.uid).set({
+                                            fcmToken: fcmToken,
+                                            tokenUpdatedAt: new Date().toISOString()
+                                        }, { merge: true });
+                                    }
+                                }).catch(function(error) {
+                                    console.error('FCM 토큰 갱신 실패:', error);
+                                });
+                            }
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('사용자 정보 가져오기 실패:', error);
+                    });
             } else {
-                window.location.href = 'login.html';
+                // 로그아웃된 상태
+                console.log('UI 업데이트: 로그아웃 상태');
+                loginBtn.style.display = 'block';
+                userInfo.style.display = 'none';
+                mainContent.style.display = 'none';
+                loginMessage.style.display = 'block';
             }
-        });
-
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === loginModal) {
-                loginModal.style.display = 'none';
-            }
-        });
+        }
     </script>
 
     <style>
@@ -531,7 +577,7 @@
             background-color: rgba(255, 255, 255, 0.9);
             padding: 8px 15px;
             border-radius: 25px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             gap: 10px;
             width: fit-content;
         }
@@ -555,7 +601,7 @@
         }
 
         .user-email {
-            display: none; /* 이름 표시 숨김 */
+            display: inline-block; /* 이름 표시 활성화 */
             margin-right: 0;
             color: #333;
             font-size: 14px;
@@ -596,57 +642,6 @@
             }
         }
 
-        /* 로그인 모달 스타일 */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-
-        .modal-content {
-            position: relative;
-            background-color: white;
-            margin: 15% auto;
-            padding: 20px;
-            width: 90%;
-            max-width: 400px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .close-btn {
-            position: absolute;
-            right: 10px;
-            top: 10px;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-        }
-
-        .login-form input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        .login-form button {
-            width: 100%;
-            padding: 10px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-
         #login-message {
             text-align: center;
             padding: 20px;
@@ -662,7 +657,7 @@
         }
 
         .notification-toggle {
-            display: none;
+            display: flex;
             align-items: center;
             margin-right: 0;
             cursor: pointer;
@@ -701,47 +696,92 @@
             min-width: fit-content;
         }
 
-        .required-mark {
-            color: #e74c3c;
-            margin-left: 3px;
-        }
-
-        .form-label {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .consent-box {
-            margin: 15px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #f8f9fa;
-        }
-
-        .consent-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 14px;
-            color: #333;
-        }
-
-        .consent-label input[type="checkbox"] {
-            width: auto;
-            margin: 0;
-        }
-
-        .error-message {
-            color: #e74c3c;
-            font-size: 12px;
-            margin-top: 3px;
+        /* 모달 스타일 */
+        .modal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+        
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .modal-content button {
+            width: 100%;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 9999;
+        }
+        
+        .direct-login-btn {
+            display: block;
+            margin: 20px auto;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Jua', sans-serif;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+        
+        .direct-login-btn:hover {
+            background-color: #2980b9;
         }
     </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <link rel="apple-touch-icon" href="/images/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
 </head>
 <body>
     <div class="header">
@@ -751,7 +791,7 @@
                     <input type="checkbox" id="notification-toggle">
                     <label for="notification-toggle">알림 받기</label>
                 </div>
-                <span class="user-email"></span>
+                <span class="user-email" style="font-weight: bold;"></span>
                 <button class="login-btn" id="logoutBtn">로그아웃</button>
             </div>
             <button class="login-btn" id="loginBtn">로그인</button>
@@ -764,71 +804,10 @@
         <span class="emoji">😊</span>
     </h1>
 
-    <!-- 로그인 모달 -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>회원가입</h2>
-            <form class="login-form" id="loginForm">
-                <div class="form-group">
-                    <label class="form-label">
-                        이름
-                        <span class="required-mark">*</span>
-                    </label>
-                    <input type="text" id="signupName" placeholder="이름을 입력하세요" required>
-                    <div class="error-message" id="nameError">이름을 입력해주세요.</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        전화번호
-                        <span class="required-mark">*</span>
-                    </label>
-                    <input type="tel" id="signupPhone" 
-                           placeholder="전화번호 (예: 010-1234-5678)"
-                           pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}" required>
-                    <div class="error-message" id="phoneError">올바른 전화번호 형식을 입력해주세요.</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        이메일
-                        <span class="required-mark">*</span>
-                    </label>
-                    <input type="email" id="signupEmail" placeholder="이메일을 입력하세요" required>
-                    <div class="error-message" id="emailError">올바른 이메일 주소를 입력해주세요.</div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        비밀번호
-                        <span class="required-mark">*</span>
-                    </label>
-                    <input type="password" id="signupPassword" 
-                           placeholder="비밀번호를 입력하세요 (8자 이상)" 
-                           minlength="8" required>
-                    <div class="error-message" id="passwordError">비밀번호는 8자 이상이어야 합니다.</div>
-                </div>
-
-                <div class="consent-box">
-                    <label class="consent-label">
-                        <input type="checkbox" id="pushConsent" required>
-                        <span>웹 푸시 알림 수신에 동의합니다<span class="required-mark">*</span></span>
-                    </label>
-                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                        중요 알림과 업데이트 소식을 받아보실 수 있습니다.
-                    </p>
-                </div>
-
-                <button type="submit">가입하기</button>
-                <button type="button" id="googleLoginBtn">Google로 로그인</button>
-            </form>
-        </div>
-    </div>
-
     <div id="login-message">
         <h2>로그인이 필요합니다</h2>
         <p>서비스를 이용하려면 로그인해주세요.</p>
+        <button class="login-btn direct-login-btn" onclick="window.location.href='simple-login.html'">로그인 페이지로 이동</button>
     </div>
 
     <div id="main-content">
@@ -846,6 +825,21 @@
                     <div id="message">카메라를 켜는 중...</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 프로필 모달 -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h2>사용자 정보 입력</h2>
+            <p style="margin-bottom: 15px; color: #666;">서비스 이용을 위해 정보를 입력해주세요.</p>
+            <form class="login-form" id="profileForm">
+                <input type="text" id="userName" placeholder="이름" required>
+                <input type="tel" id="userPhone" placeholder="전화번호 (예: 010-1234-5678)" 
+                       pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}" required>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">전화번호 형식: 010-1234-5678</p>
+                <button type="submit">저장</button>
+            </form>
         </div>
     </div>
 
@@ -877,19 +871,23 @@
         }
     </script>
 
-    <!-- 프로필 모달 -->
-    <div id="profileModal" class="modal">
-        <div class="modal-content">
-            <h2>사용자 정보 입력</h2>
-            <p style="margin-bottom: 15px; color: #666;">서비스 이용을 위해 정보를 입력해주세요.</p>
-            <form class="login-form" id="profileForm">
-                <input type="text" id="userName" placeholder="이름" required>
-                <input type="tel" id="userPhone" placeholder="전화번호 (예: 010-1234-5678)" 
-                       pattern="[0-9]{3}-[0-9]{4}-[0-9]{4}" required>
-                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">전화번호 형식: 010-1234-5678</p>
-                <button type="submit">저장</button>
-            </form>
-        </div>
+    <script>
+      // PWA 서비스 워커 등록
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/pwa-sw.js')
+            .then(function(registration) {
+              console.log('PWA 서비스 워커 등록 성공:', registration.scope);
+            })
+            .catch(function(error) {
+              console.error('PWA 서비스 워커 등록 실패:', error);
+            });
+        });
+      }
+    </script>
+
+    <div id="debug-panel" class="debug-panel" style="display: none;">
+        <div id="debug-log"></div>
     </div>
 </body>
 </html> 

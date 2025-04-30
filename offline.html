@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오프라인 상태 - Smile C</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#3498db">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .offline-icon {
+            font-size: 80px;
+            margin: 20px 0;
+            color: #7f8c8d;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin: 30px 0;
+        }
+        h1 {
+            color: #3498db;
+        }
+        p {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="offline-icon">
+            ⚠️
+        </div>
+        <h1>인터넷 연결 없음</h1>
+        <p>현재 오프라인 상태입니다. 인터넷 연결을 확인하고 다시 시도해주세요.</p>
+        <p>이미 방문한 페이지는 오프라인에서도 볼 수 있습니다.</p>
+        <a href="/" class="btn">새로고침</a>
+    </div>
+    
+    <script>
+        // 온라인 상태 확인
+        window.addEventListener('online', function() {
+            window.location.reload();
+        });
+        
+        // 서비스 워커 등록 확인
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/pwa-sw.js')
+                .then(registration => {
+                    console.log('Service Worker 등록 성공:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Service Worker 등록 실패:', error);
+                });
+        }
+    </script>
+</body>
+</html> 
