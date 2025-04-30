@@ -140,16 +140,23 @@
             // 테스트 계정 생성 (이미 존재하면 무시됨)
             createTestAccount();
             
+            // iOS 디바이스 감지
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            
             // 현재 로그인 상태 확인
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
                     showMessage(`환영합니다! 홈으로 이동합니다...`, 'success');
                     
-                    // 세션 스토리지에 로그인 성공 표시 (새로고침 시 사용)
-                    sessionStorage.setItem('user_logged_in', 'true');
+                    // localStorage에 로그인 성공 표시 (새로고침, 브라우저 재시작 시에도 유지)
+                    localStorage.setItem('user_logged_in', 'true');
+                    localStorage.setItem('last_login', new Date().getTime().toString());
                     
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        // iOS에서는 강제로 캐시를 무시하기 위한 타임스탬프 추가
+                        const timestamp = new Date().getTime();
+                        const redirectUrl = isIOS ? `index.html?t=${timestamp}` : 'index.html';
+                        window.location.href = redirectUrl;
                     }, 1000);
                 }
             });
@@ -185,6 +192,9 @@
             
             showMessage('로그인 중...', '');
             
+            // iOS 디바이스 감지
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            
             // 먼저 로그아웃 (깨끗한 상태에서 시작)
             firebase.auth().signOut()
                 .then(() => {
@@ -194,21 +204,43 @@
                 .then((userCredential) => {
                     showMessage('로그인 성공! 홈으로 이동합니다...', 'success');
                     
-                    // 세션 스토리지에 로그인 성공 표시 (새로고침 시 사용)
-                    sessionStorage.setItem('user_logged_in', 'true');
+                    // localStorage에 로그인 성공 표시 (새로고침, 브라우저 재시작 시에도 유지)
+                    localStorage.setItem('user_logged_in', 'true');
+                    localStorage.setItem('last_login', new Date().getTime().toString());
+                    localStorage.setItem('user_email', email);
                     
-                    // iOS 기기 감지
-                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                    // 쿠키에도 로그인 정보 저장 (iOS 문제 해결을 위한 추가 방법)
+                    setCookie('user_logged_in', 'true', 1); // 1일 유효
+                    setCookie('user_email', email, 1);
                     
-                    // iOS에서는 replace 대신 href 사용 (캐싱 문제 해결)
+                    // iOS에서는 캐시를 회피하기 위해 타임스탬프 추가
+                    const timestamp = new Date().getTime();
+                    const redirectUrl = isIOS ? `index.html?t=${timestamp}` : 'index.html';
+                    
+                    // 강제 새로고침을 위한 폼 제출 방식 사용 (iOS 캐싱 회피)
                     if (isIOS) {
+                        // iOS용 특수 로그인 성공 처리
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = redirectUrl;
+                        
+                        // 추가 필드로 로그인 상태 전달
+                        const hiddenField = document.createElement('input');
+                        hiddenField.type = 'hidden';
+                        hiddenField.name = 'user_logged_in';
+                        hiddenField.value = 'true';
+                        form.appendChild(hiddenField);
+                        
+                        document.body.appendChild(form);
+                        
+                        // 폼 제출로 인한 전체 페이지 새로고침 (캐시 회피)
                         setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 1000);
+                            form.submit();
+                        }, 500);
                     } else {
-                        // 다른 기기에서는 기존대로 replace 사용
+                        // 다른 기기에서는 단순 리디렉션
                         setTimeout(() => {
-                            window.location.replace('index.html');
+                            window.location.href = redirectUrl;
                         }, 1000);
                     }
                 })
@@ -230,6 +262,29 @@
                     
                     showMessage(errorMessage, 'error');
                 });
+        }
+        
+        // 쿠키 설정 함수
+        function setCookie(name, value, days) {
+            let expires = '';
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = '; expires=' + date.toUTCString();
+            }
+            document.cookie = name + '=' + (value || '') + expires + '; path=/; SameSite=Strict';
+        }
+        
+        // 쿠키 가져오기 함수
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
         }
         
         // 메시지 표시 함수

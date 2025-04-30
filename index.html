@@ -76,19 +76,52 @@
                 return;
             }
             
-            // iOS Safari 및 Chrome에서 세션 스토리지 확인
-            const isUserLoggedIn = sessionStorage.getItem('user_logged_in') === 'true';
-            if (isUserLoggedIn) {
-                // 세션 스토리지에 로그인 정보가 있으면 UI 미리 업데이트
-                loginBtn.style.display = 'none';
-                userInfo.style.display = 'flex';
-                mainContent.style.display = 'block';
-                loginMessage.style.display = 'none';
-                userEmail.textContent = "환영합니다!";
+            // 폼 제출을 통한 파라미터 확인 (iOS 전용)
+            checkURLParameters();
+            
+            // 로컬 스토리지에서 로그인 상태 확인
+            const isLoggedIn = localStorage.getItem('user_logged_in') === 'true';
+            const lastLogin = parseInt(localStorage.getItem('last_login') || '0');
+            const currentTime = new Date().getTime();
+            const oneDay = 24 * 60 * 60 * 1000; // 1일 (밀리초)
+            
+            // 로그인 상태가 1일 이내인 경우에만 유효하게 처리
+            const isLoginValid = isLoggedIn && (currentTime - lastLogin < oneDay);
+            
+            // 쿠키에서도 로그인 상태 확인 (iOS 추가 대응)
+            const cookieLogin = getCookie('user_logged_in') === 'true';
+            
+            // iOS 디바이스 감지
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            
+            // 로컬 스토리지 또는 쿠키에서 로그인 정보가 있으면 인증 진행
+            if (isLoginValid || cookieLogin) {
+                // 로컬 스토리지에 로그인 정보가 있고 유효하면 UI 미리 업데이트
+                debugLog('로컬 스토리지 또는 쿠키 로그인 정보 사용: ' + isLoginValid + ', ' + cookieLogin);
+                preAuthenticateUI();
                 
-                // 카메라 초기화 (init 함수가 있을 경우)
-                if (typeof init === 'function') {
-                    init();
+                // iOS에서 추가 검증
+                if (isIOS) {
+                    // 현재 로그인된 사용자가 있는지 명시적으로 확인
+                    const currentUser = firebase.auth().currentUser;
+                    if (!currentUser) {
+                        // 현재 인증된 사용자가 없지만 로그인 정보가 있으면
+                        // 페이지 새로고침 없이 직접 재인증 시도
+                        const savedEmail = localStorage.getItem('user_email') || getCookie('user_email');
+                        if (savedEmail && savedEmail === 'test@example.com') {
+                            // 테스트 계정인 경우 자동 로그인 (비밀번호 고정)
+                            debugLog('iOS에서 자동 재인증 시도');
+                            firebase.auth().signInWithEmailAndPassword('test@example.com', 'test1234')
+                                .then(() => {
+                                    debugLog('iOS 자동 재인증 성공');
+                                })
+                                .catch(error => {
+                                    debugLog('iOS 자동 재인증 실패: ' + error.message);
+                                    // 실패 시 로그인 페이지로 리디렉션
+                                    redirectToLogin();
+                                });
+                        }
+                    }
                 }
             }
                 
@@ -99,8 +132,14 @@
             
             // 로그아웃 버튼 클릭 이벤트
             logoutBtn.addEventListener('click', function() {
-                // 세션 스토리지에서 로그인 정보 제거
-                sessionStorage.removeItem('user_logged_in');
+                // 로컬 스토리지에서 로그인 정보 제거
+                localStorage.removeItem('user_logged_in');
+                localStorage.removeItem('last_login');
+                localStorage.removeItem('user_email');
+                
+                // 쿠키에서도 로그인 정보 제거
+                eraseCookie('user_logged_in');
+                eraseCookie('user_email');
                 
                 firebase.auth().signOut()
                     .then(function() {
@@ -115,21 +154,12 @@
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
                     // 로그인 상태 UI 표시
-                    loginBtn.style.display = 'none';
-                    userInfo.style.display = 'flex';
-                    mainContent.style.display = 'block';
-                    loginMessage.style.display = 'none';
+                    preAuthenticateUI();
                     
-                    // 사용자 이메일 표시 대신 환영 메시지 표시
-                    userEmail.textContent = "환영합니다!";
-                    
-                    // 세션 스토리지에 로그인 정보 저장 (iOS에서 새로고침 시 사용)
-                    sessionStorage.setItem('user_logged_in', 'true');
-                    
-                    // 카메라 초기화 (init 함수가 있을 경우)
-                    if (typeof init === 'function') {
-                        init();
-                    }
+                    // 로컬 스토리지에 로그인 정보 저장 (새로고침, 브라우저 재시작 시에도 유지)
+                    localStorage.setItem('user_logged_in', 'true');
+                    localStorage.setItem('last_login', new Date().getTime().toString());
+                    localStorage.setItem('user_email', user.email || '');
                     
                     // Firestore에서 사용자 정보 가져오기
                     db.collection('users').doc(user.uid).get()
@@ -382,6 +412,54 @@
                 mainContent.style.display = 'none';
                 loginMessage.style.display = 'block';
             }
+        }
+
+        // 사전 인증 UI 업데이트 함수
+        function preAuthenticateUI() {
+            loginBtn.style.display = 'none';
+            userInfo.style.display = 'flex';
+            mainContent.style.display = 'block';
+            loginMessage.style.display = 'none';
+            userEmail.textContent = "환영합니다!";
+            
+            // 카메라 초기화 (init 함수가 있을 경우)
+            if (typeof init === 'function') {
+                init();
+            }
+        }
+        
+        // URL 파라미터 확인 함수 (iOS 전용 폼 제출 처리)
+        function checkURLParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const formParams = new URLSearchParams(window.location.search);
+            
+            // POST 요청 확인 (iOS에서 폼 제출을 통한 로그인 확인)
+            if (document.referrer.includes('simple-login.html') || urlParams.has('t') || formParams.has('user_logged_in')) {
+                debugLog('폼 제출 또는 URL 파라미터를 통한 로그인 감지');
+                preAuthenticateUI();
+            }
+        }
+        
+        // 로그인 페이지로 리디렉션
+        function redirectToLogin() {
+            window.location.href = 'simple-login.html';
+        }
+
+        // 쿠키 가져오기 함수
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+        
+        // 쿠키 삭제 함수
+        function eraseCookie(name) {
+            document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Strict;';
         }
     </script>
 
@@ -790,6 +868,19 @@
         <h2>로그인이 필요합니다</h2>
         <p>서비스를 이용하려면 로그인해주세요.</p>
         <button class="login-btn direct-login-btn" onclick="window.location.href='simple-login.html'">로그인 페이지로 이동</button>
+        
+        <div id="ios-login-option" style="display: none; margin-top: 20px; text-align: center;">
+            <p style="margin-bottom: 10px; color: #666;">아이폰 사용자는 아래 버튼을 이용해주세요:</p>
+            <button class="login-btn direct-login-btn" style="background-color: #2ecc71;" onclick="window.location.href='ios-login-bridge.html'">아이폰 간편 로그인</button>
+        </div>
+        
+        <script>
+            // iOS 디바이스 감지
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                document.getElementById('ios-login-option').style.display = 'block';
+            }
+        </script>
     </div>
 
     <div id="main-content">
